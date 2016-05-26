@@ -103,7 +103,7 @@ public class GameGUI extends JPanel {
 
 		// Button and search text for search by field in menu bar
 		final JButton searchButton = new JButton("  Search By...  ");
-		JTextField searchText = new JTextField("monster || 1111");
+		JTextField searchText = new JTextField();
 		
 	    // Picker box for type of search
 		final JComboBox<?> pickerBox = new JComboBox<Object>( new Object[]{
@@ -117,20 +117,33 @@ public class GameGUI extends JPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				String searchString = searchText.getText();
+				String SearchResult = "";
 				if ("" == searchString) {
 					JOptionPane.showMessageDialog(frame, "YOU MUST SPECIFY A SEARCH STRING");
 				}
 				// Switch on search type based off picker box
 				System.out.println(pickerBox.getSelectedItem().toString());
-				switch (pickerBox.getSelectedItem().toString()) {
-				    case "name":
-				    	JOptionPane.showMessageDialog(frame, getCaveItemByName(searchString));
-				    case "type":
-				    	JOptionPane.showMessageDialog(frame, getCaveItemByType(searchString));
-				    case "index":
-				    	int myIndex = Integer.parseInt(searchString);
-				    	JOptionPane.showMessageDialog(frame, getCaveItemByIndex(myIndex));
+				String myType = pickerBox.getSelectedItem().toString();
+				
+				if (myType == "name") {
+				    System.out.println("name");
+				    System.out.println(searchString);
+				    System.out.println(getCaveItemByName(searchString));
+				    searchString = getCaveItemByName(searchString);
+				}
+				
+				if (myType == "type") {
+					System.out.println("type");
+			    	searchString = getCaveItemByType(searchString);
+				}
+				
+				if (myType == "index") {
+				   	System.out.println("index");
+				   	int myIndex = Integer.parseInt(searchString);
+				   	searchString = getCaveItemByIndex(myIndex);
 		        }
+				
+				JOptionPane.showMessageDialog(frame, SearchResult);
 			}
 		});
 		
@@ -334,10 +347,11 @@ public class GameGUI extends JPanel {
 				}
 				break;
 		}
-//		
-//		if ("" == caveItem) {
-//			caveItem = "No Results Found In Search!";
-//		}
+		
+		if ("" == caveItem) {
+			caveItem = "No Results Found In Search!";
+		}
+		
 		return caveItem;
 	}
 	
@@ -359,9 +373,9 @@ public class GameGUI extends JPanel {
 			}
 		}
 		
-//		if ("" == caveItem) {
-//			caveItem = "No Results Found In Search!";
-//		}
+		if ("" == caveItem) {
+			caveItem = "No Results Found In Search!";
+		}
 		
 		return caveItem;
 	}
@@ -384,6 +398,10 @@ public class GameGUI extends JPanel {
 					}
 				}
 			}
+		}
+		
+		if ("" == caveItem) {
+			caveItem = "No Results Found In Search!";
 		}
 		
 		return caveItem;
