@@ -16,6 +16,7 @@ public class Treasure {
 	private int value;
 	
 	// constructor
+	// requires index and type
 	Treasure(int myIndex, String myType, int myCreature, double myWeight, int myValue) {
 		this.index = myIndex;
 		this.type = myType;
@@ -34,7 +35,7 @@ public class Treasure {
 		return index;
 	}
 	
-	
+	// get type
 	public String getType() {
 		return type;
 	}

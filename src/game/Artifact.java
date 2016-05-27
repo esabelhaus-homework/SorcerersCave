@@ -15,6 +15,7 @@ public class Artifact{
 	private String name;
 	
 	// constructor
+	// requires index, type, creature, and name
 	Artifact(int myIndex, String myType, int myCreature, String myName) {
 		this.index = myIndex;
 		this.type = myType;
@@ -32,10 +33,12 @@ public class Artifact{
 		return index;
 	}
 	
+	// get name
 	public String getName() {
 		return name;
 	}
 	
+	// get type
 	public String getType() {
 		return type;
 	}
