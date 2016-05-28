@@ -1,0 +1,11 @@
+//    p:<index>:<name>
+p : 10001 : Unity
+//    c:<index>:<type>:<name>:<party>:<empathy>:<fear>:<carrying capacity>
+c : 20001 : Woman   : Lucy   :10001 : 17 : 22 : 20
+c : 20002 : Woman   : Jane   :10001 : 22 : 15 : 25
+//    t:<index>:<type>:<creature>:<weight>:<value>
+t : 30001 : Gold : 20001 : 50 : 2000
+t : 30002 : Gold :     0 : 75 : 5000
+t : 30003 : Gems : 20002 : 10 : 10000
+//    a:<index>:<type>:<creature>[:<name>]
+a : 40001 : Wand : 20001 : ElderWand

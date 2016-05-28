@@ -117,7 +117,7 @@ public class GameGUI extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				String searchString = searchText.getText();
 				String searchResult = "";
-				if ("" == searchString) {
+				if ("".equals(searchString)) {
 					JOptionPane.showMessageDialog(frame, "YOU MUST SPECIFY A SEARCH STRING");
 					return;
 				}
@@ -138,7 +138,8 @@ public class GameGUI extends JPanel {
 				if (myType == "index") {
 				   	System.out.println("index");
 				   	int myIndex = Integer.parseInt(searchString);
-				   	if (myIndex <= 10000 && myIndex > 60000){
+				   	if ( (myIndex < 10000) || (myIndex > 60000) ){
+				   		System.out.println("index out of bounds");
 				   		JOptionPane.showMessageDialog(frame, "Index must be between 10000 and 59999");
 				   		return;
 				   	}
@@ -238,7 +239,7 @@ public class GameGUI extends JPanel {
 	
 	// create new party, assign to cave
 	// p:<index>:<name>
-	private static void addParty(String attributes[]) {
+	public static void addParty(String attributes[]) {
 		int index = Integer.parseInt(attributes[1]);
 		String name = attributes[2];
 		Party myParty = new Party(index, name);
@@ -248,7 +249,7 @@ public class GameGUI extends JPanel {
 
 	// create new creature assign to party
 	// c:<index>:<type>:<name>:<party>:<empathy>:<fear>:<carrying capacity>
-	private static void addCreature(String attributes[]) {
+	public static void addCreature(String attributes[]) {
 		// set instance variables from incoming array of strings
 		int index = Integer.parseInt(attributes[1]);
 		String type = attributes[2];
@@ -271,7 +272,7 @@ public class GameGUI extends JPanel {
 
 	// create new treasure, assign appropriately
 	// t:<index>:<type>:<creature>:<weight>:<value>
-	private static void addTreasure(String attributes[]) {
+	public static void addTreasure(String attributes[]) {
 		// set instance variables from incoming array of strings
 		int index = Integer.parseInt(attributes[1]);
 		String type = attributes[2];
@@ -296,7 +297,7 @@ public class GameGUI extends JPanel {
 
 	// create new artifact, assign appropriately
 	// a:<index>:<type>:<creature>[:<name>]
-	private static void addArtifact(String attributes[]) {
+	public static void addArtifact(String attributes[]) {
 		// set instance variables from incoming array of strings
 		int index = Integer.parseInt(attributes[1]);
 		String type = attributes[2];
