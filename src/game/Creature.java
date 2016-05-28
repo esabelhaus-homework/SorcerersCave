@@ -111,7 +111,7 @@ public class Creature {
 	public String getTreasureByType(String myType) {
 		String myTreasure = "";
 		for(Treasure treasure: treasures){
-			if (treasure.getType() == myType) {
+			if (treasure.getType().equals(myType)) {
 				myTreasure += treasure.toString();
 			}
 		}

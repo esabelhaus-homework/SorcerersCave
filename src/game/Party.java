@@ -24,7 +24,7 @@ public class Party {
 	// helper method to get creature by index
 	public Creature getCreatureByIndex(int myIndex) {
 		for (Creature creature: creatures) {
-			if (creature.getIndex() == myIndex) {
+			if (myIndex == creature.getIndex()) {
 				return creature;
 			}
 		}

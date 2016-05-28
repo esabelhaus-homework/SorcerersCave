@@ -336,7 +336,9 @@ public class GameGUI extends JPanel {
 		switch (i) {
 			// for a party
 			case 1:
-				caveItem = sorcerersCave.getPartyByIndex(index).toString();
+				if (!(sorcerersCave.getPartyByIndex(index) == null)){
+					caveItem = sorcerersCave.getPartyByIndex(index).toString();
+				}
 				break;
 			// for a creature
 			case 2:
