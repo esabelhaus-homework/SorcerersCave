@@ -14,7 +14,8 @@ public class Cave {
 	private ArrayList<Party> parties = new ArrayList<Party>();
 	private ArrayList<Treasure> undiscoveredTreasure = new ArrayList<Treasure>();
 	private ArrayList<Artifact> undiscoveredArtifacts = new ArrayList<Artifact>();
-
+	private ArrayList<Creature> detatchedCreatures = new ArrayList<Creature>();
+	
 	// create string of the entire cave which is broken up by new lines
 	// and space indented
 	public String toString() {
@@ -53,6 +54,10 @@ public class Cave {
 		return undiscoveredTreasure;
 	}
 	
+	public ArrayList<Creature> getDetechedCreatures() {
+		return detatchedCreatures;
+	}
+	
 	// helper method to find parties by index
 	public Party getPartyByIndex(int myIndex) {
 		for (Party party: parties) {
@@ -76,5 +81,10 @@ public class Cave {
 	// add undiscovered artifact
 	public void addUndiscoveredArtifact(Artifact hidden) {
 		undiscoveredArtifacts.add(hidden);
+	}
+	
+	// add detached creature
+	public void addDetachedCreature(Creature detatched) {
+		detatchedCreatures.add(detatched);
 	}
 }

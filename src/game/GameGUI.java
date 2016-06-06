@@ -10,12 +10,9 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.Scanner;
 
 import javax.swing.Box;
 import javax.swing.ImageIcon;
@@ -47,58 +44,55 @@ public class GameGUI extends JPanel {
 	public static void main(String[] args) throws IOException {
 		
 		// instantiate file chooser in current directory
-		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
-
-		// display file chooser
-		chooser.showOpenDialog(chooser);
+		JFileChooser chooser = new JFileChooser(System.getProperty("."));
 		
-		String filePath = chooser.getSelectedFile().getName();
-		
-		// open file stream of chosen file
-		FileInputStream fstream = new FileInputStream(filePath);
-		
-		// get the object of DataInputStream
-		DataInputStream in = new DataInputStream(fstream);
-		
-		@SuppressWarnings("resource")
-		BufferedReader br = new BufferedReader(new InputStreamReader(in));
-	
-		String strLine;
-
-		//Read File Line By Line
-		while ((strLine = br.readLine()) != null) {
-		    //ignore blanks
-		    if(!strLine.trim().equals("\n"))
-		    {
-		    	if (strLine.contains("/")) {
-		    		// ignore comments
-		    		continue;
-		    	}
-		    	String data[] = strLine.trim().split(":");
-		    	// trim extra spaces for consistency sake
-		    	for (int i = 0; i < data.length; i++){
-		    	    data[i] = data[i].trim();
-		    	}
-		    	//switch based off of the incoming parameters
-		    	switch(data[0]) {
-		    		case "p": 
-		    			addParty(data);
-		    			break;
-		    		case "c": 
-		    			addCreature(data);
-		    			break;
-		    		case "t": 
-		    			addTreasure(data);
-		    			break;
-		    		case "a": 
-		    			addArtifact(data);
-		    			break;
-		    		case "j": 
-		    			// jobs not yet supported
-		    			break;
-		    	}
-		    }
-		}
+		int returnVal = chooser.showOpenDialog(null);
+        if(returnVal == JFileChooser.APPROVE_OPTION) {
+            System.out.println("You chose to open this file: " +
+            chooser.getSelectedFile().getName());
+            try {
+                Scanner sfin = new Scanner (chooser.getSelectedFile());
+                while (sfin.hasNext()) {
+                	String strLine = sfin.nextLine().trim();
+                	System.out.println(strLine);
+                	if(!strLine.equals("\n"))
+        		    {
+        		    	if (strLine.contains("/")) {
+        		    		// ignore comments
+        		    		continue;
+        		    	}
+        		    	String data[] = strLine.trim().split(":");
+        		    	// trim extra spaces for consistency sake
+        		    	for (int i = 0; i < data.length; i++){
+        		    	    data[i] = data[i].trim();
+        		    	}
+        		    	//switch based off of the incoming parameters
+        		    	switch(data[0]) {
+        		    		case "p": 
+        		    			addParty(data);
+        		    			break;
+        		    		case "c": 
+        		    			addCreature(data);
+        		    			break;
+        		    		case "t": 
+        		    			addTreasure(data);
+        		    			break;
+        		    		case "a": 
+        		    			addArtifact(data);
+        		    			break;
+        		    		case "j": 
+        		    			// jobs not yet supported
+        		    			break;
+        		    	}
+        		    }
+                }
+                
+                sfin.close();
+            }
+            catch (FileNotFoundException e) {
+                JOptionPane.showMessageDialog(null, "File not found.");
+             } // end try/catch
+        } // end if file chosen
 
 		// Button and search text for search by field in menu bar
 		final JButton searchButton = new JButton("  Search By...  ");
@@ -181,11 +175,15 @@ public class GameGUI extends JPanel {
         tabbedPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
         ImageIcon icon = createImageIcon("img/Elder_wand.png");
         
-        //Iterate over every party, and undiscovered item
+        //Iterate over every party, detached creature and undiscovered item
         for (Party myParty: myCave.getParties()) {
         	JComponent panel = makePartyPanel(myParty.toString());
         	tabbedPane.addTab(myParty.getName(), icon, panel);
         }
+        
+        JComponent detached = makeDetachedCreaturePanel(myCave);
+        tabbedPane.addTab("Wandering Creatures", icon, detached);
+        
         JComponent undiscovered = makeUndiscoveredPanel(myCave);
         tabbedPane.addTab("Undiscovered Items", icon, undiscovered);
         
@@ -211,6 +209,22 @@ public class GameGUI extends JPanel {
 		uPanel.setLineWrap(true);
 		uPanel.setEditable(false);
 		uPanel.setText(undiscovered);
+	    JScrollPane jsp = new JScrollPane (uPanel);
+		return jsp;
+	}
+	
+	// insert all undiscovered items into a non editable text panel
+	private JComponent makeDetachedCreaturePanel(Cave thisCave) {
+		String detached = "";
+		for (Creature myCreature: thisCave.getDetechedCreatures()) {
+			detached += myCreature.toString();
+		}
+		
+		JTextArea uPanel = new JTextArea(20,20);
+		uPanel.setWrapStyleWord(true);
+		uPanel.setLineWrap(true);
+		uPanel.setEditable(false);
+		uPanel.setText(detached);
 	    JScrollPane jsp = new JScrollPane (uPanel);
 		return jsp;
 	}
@@ -263,11 +277,13 @@ public class GameGUI extends JPanel {
 		Creature myCreature = new Creature(index, type, name, party, empathy, fear, carryingCapacity);
 		
 		// find creatures party
-		Party myParty = sorcerersCave.getPartyByIndex(party);
-		
-		// add creature to its party
-		myParty.addCreature(myCreature);
-		
+		if (party == 0){
+			sorcerersCave.addDetachedCreature(myCreature);
+		} else {
+			Party myParty = sorcerersCave.getPartyByIndex(party);
+			// add creature to its party
+			myParty.addCreature(myCreature);
+		}
 	}
 
 	// create new treasure, assign appropriately
@@ -348,6 +364,11 @@ public class GameGUI extends JPanel {
 						caveItem += party.getCreatureByIndex(index).toString();
 					} 
 				}
+				for(Creature creature: sorcerersCave.getDetechedCreatures()) {
+					if (index == creature.getIndex()) {
+						caveItem += creature.toString();
+					}
+				}
 				break;
 			// for treasures
 			case 3:
@@ -358,6 +379,18 @@ public class GameGUI extends JPanel {
 						}
 					} 
 				}
+				for(Creature creature: sorcerersCave.getDetechedCreatures()) {
+					for(Treasure treasure: creature.getTreasures()){
+						if (index == treasure.getIndex()) {
+							caveItem += treasure.toString();
+						}
+					}
+				}
+				for(Treasure treasure: sorcerersCave.getUndiscoveredTreasure()){
+					if (index == treasure.getIndex()) {
+						caveItem += treasure.toString();
+					}
+				}
 				break;
 			// for artifacts
 			case 4:
@@ -367,6 +400,18 @@ public class GameGUI extends JPanel {
 						    caveItem += creature.getArtifactByIndex(index).toString();
 						}
 					} 
+				}
+				for(Creature creature: sorcerersCave.getDetechedCreatures()) {
+					for(Artifact artifact: creature.getArtifacts()) {
+						if (index == artifact.getIndex()) {
+							caveItem += artifact.toString();
+						}
+					}
+				}
+				for(Artifact artifact: sorcerersCave.getUndiscoveredArtifacts()) {
+					if (index == artifact.getIndex()) {
+						caveItem += artifact.toString();
+					}
 				}
 				break;
 			// Jobs are not supported but will be later
@@ -402,6 +447,17 @@ public class GameGUI extends JPanel {
 				// treasure does not contain a name attribute
 			}
 		}
+		for (Creature creature: sorcerersCave.getDetechedCreatures()) {
+			if (creature.getName().equals(name)){
+				caveItem += creature.toString();
+			}
+		}
+		
+		for (Artifact artifact: sorcerersCave.getUndiscoveredArtifacts()) {
+			if (artifact.getName().equals(name)) {
+				caveItem += artifact.toString();
+			}
+		}
 		
 		// standardizes response when no item returned
 		if ("" == caveItem) {
@@ -433,6 +489,33 @@ public class GameGUI extends JPanel {
 						caveItem += artifact.toString();
 					}
 				}
+			}
+		}
+		for (Creature creature: sorcerersCave.getDetechedCreatures()) {
+			if (creature.getType().equals(type)){
+				caveItem += creature.toString();
+			}
+			for (Artifact artifact: creature.getArtifacts()){
+				if (artifact.getType().equals(type)){
+					caveItem += artifact.toString();
+				}
+			}
+			for (Treasure treasure: creature.getTreasures()) {
+				if (treasure.getType().equals(type)) {
+					caveItem += treasure.toString();
+				}
+			}
+		}
+		
+		for (Artifact artifact: sorcerersCave.getUndiscoveredArtifacts()) {
+			if (artifact.getType().equals(type)) {
+				caveItem += artifact.toString();
+			}
+		}
+		
+		for (Treasure treasure: sorcerersCave.getUndiscoveredTreasure()) {
+			if (treasure.getType().equals(type)) {
+				caveItem += treasure.toString();
 			}
 		}
 		

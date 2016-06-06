@@ -1,11 +1,8 @@
 package game;
 
-import static org.junit.Assert.*;
-
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
@@ -72,6 +69,7 @@ public class TestSorcerersCave {
 	//  c:<index>:<type>:<name>:<party>:<empathy>:<fear>:<carrying capacity>
 	//c : 20001 : Woman   : Lucy   :10001 : 17 : 22 : 20
 	//c : 20002 : Woman   : Jane   :10001 : 22 : 15 : 25
+	//c : 20003 : Worg	: Brandon : 0     : 30 : 21 : 0
 	//  t:<index>:<type>:<creature>:<weight>:<value>
 	//t : 30001 : Gold : 20001 : 50 : 2000
 	//t : 30002 : Gold :     0 : 75 : 5000
@@ -106,6 +104,13 @@ public class TestSorcerersCave {
 					for (Treasure treasure: creature.getTreasures()){
 						assert(treasure.getIndex() == 20001);
 					}
+				}
+			}
+			for(Creature creature: GameGUI.sorcerersCave.getDetechedCreatures()) {
+				if (creature.getIndex() == 20003) {
+					assert(creature.getName().equals("Brandon"));
+					assert(creature.getArtifacts().isEmpty());
+					assert(creature.getTreasures().isEmpty());
 				}
 			}
 		}
