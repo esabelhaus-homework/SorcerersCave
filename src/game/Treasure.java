@@ -7,7 +7,7 @@
 
 package game;
 
-public class Treasure {
+public class Treasure extends CaveElement {
 	// define internal private variables
 	private int index;
 	private String type;

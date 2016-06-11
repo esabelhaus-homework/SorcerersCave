@@ -9,7 +9,7 @@ package game;
 
 import java.util.ArrayList;
 
-public class Creature {
+public class Creature extends CaveElement {
 	// assign private instance variables to be populated
 	private int index;
 	private String name;

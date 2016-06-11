@@ -99,11 +99,21 @@ public class GameGUI extends JPanel {
 		JTextField searchText = new JTextField();
 		
 	    // Picker box for type of search
-		final JComboBox<?> pickerBox = new JComboBox<Object>( new Object[]{
+		final JComboBox<?> searchPickerBox = new JComboBox<Object>( new Object[]{
 			"name",
 			"type", 
 			"index"}
 	    );
+		
+//		// Button and search text for search by field in menu bar
+//		final JButton sortButton = new JButton("  Sort By...  ");
+//		
+//	    // Picker box for type of search
+//		final JComboBox<?> sortPickerBox = new JComboBox<Object>( new Object[]{
+//			"name",
+//			"type", 
+//			"index"}
+//	    );
 		
 		// action listener on search button
 		searchButton.addActionListener(new ActionListener(){
@@ -116,8 +126,8 @@ public class GameGUI extends JPanel {
 					return;
 				}
 				// Switch on search type based off picker box
-				System.out.println(pickerBox.getSelectedItem().toString());
-				String myType = pickerBox.getSelectedItem().toString();
+				System.out.println(searchPickerBox.getSelectedItem().toString());
+				String myType = searchPickerBox.getSelectedItem().toString();
 				
 				if (myType == "name") {
 				    System.out.println("name");
@@ -147,11 +157,13 @@ public class GameGUI extends JPanel {
 			}
 		});
 		
+		
+		
 		// Menu bar to tie the whole search feature together
 		JMenuBar menuBar = new JMenuBar();
         menuBar.add(searchButton);
+        menuBar.add(searchPickerBox);
         menuBar.add(searchText);
-        menuBar.add(pickerBox);
         menuBar.add(Box.createHorizontalGlue());
 		
 		//Create and set up the window.
@@ -171,7 +183,7 @@ public class GameGUI extends JPanel {
 	// Public constructor, used to build out visual elements for inspecting each party in the cave
 	// as well as viewing undiscovered treasure if there is any
 	public GameGUI(Cave myCave) {		
-        JTabbedPane tabbedPane = new JTabbedPane();
+        JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.LEFT);
         tabbedPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
         ImageIcon icon = createImageIcon("img/Elder_wand.png");
         

@@ -7,7 +7,7 @@
 
 package game;
 
-public class Artifact{
+public class Artifact extends CaveElement {
 	// define internal private variables
 	private int index;
 	private String type;
