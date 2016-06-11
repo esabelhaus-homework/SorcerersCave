@@ -12,6 +12,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Scanner;
 
 import javax.swing.Box;
@@ -42,7 +44,7 @@ public class GameGUI extends JPanel {
 	public static Cave sorcerersCave = new Cave();
 	
 	public static void main(String[] args) throws IOException {
-		
+		Scanner sfin = null;
 		// instantiate file chooser in current directory
 		JFileChooser chooser = new JFileChooser(System.getProperty("."));
 		
@@ -51,49 +53,20 @@ public class GameGUI extends JPanel {
             System.out.println("You chose to open this file: " +
             chooser.getSelectedFile().getName());
             try {
-                Scanner sfin = new Scanner (chooser.getSelectedFile());
-                while (sfin.hasNext()) {
-                	String strLine = sfin.nextLine().trim();
-                	System.out.println(strLine);
-                	if(!strLine.equals("\n"))
-        		    {
-        		    	if (strLine.contains("/")) {
-        		    		// ignore comments
-        		    		continue;
-        		    	}
-        		    	String data[] = strLine.trim().split(":");
-        		    	// trim extra spaces for consistency sake
-        		    	for (int i = 0; i < data.length; i++){
-        		    	    data[i] = data[i].trim();
-        		    	}
-        		    	//switch based off of the incoming parameters
-        		    	switch(data[0]) {
-        		    		case "p": 
-        		    			addParty(data);
-        		    			break;
-        		    		case "c": 
-        		    			addCreature(data);
-        		    			break;
-        		    		case "t": 
-        		    			addTreasure(data);
-        		    			break;
-        		    		case "a": 
-        		    			addArtifact(data);
-        		    			break;
-        		    		case "j": 
-        		    			// jobs not yet supported
-        		    			break;
-        		    	}
-        		    }
-                }
-                
-                sfin.close();
+                sfin = new Scanner (chooser.getSelectedFile());
             }
             catch (FileNotFoundException e) {
                 JOptionPane.showMessageDialog(null, "File not found.");
-             } // end try/catch
-        } // end if file chosen
+             }
+        }
 
+        
+        // read attributes from file
+        readFile(sfin);
+        
+        // close file
+        sfin.close();
+        
 		// Button and search text for search by field in menu bar
 		final JButton searchButton = new JButton("  Search By...  ");
 		JTextField searchText = new JTextField();
@@ -105,15 +78,15 @@ public class GameGUI extends JPanel {
 			"index"}
 	    );
 		
-//		// Button and search text for search by field in menu bar
-//		final JButton sortButton = new JButton("  Sort By...  ");
-//		
-//	    // Picker box for type of search
-//		final JComboBox<?> sortPickerBox = new JComboBox<Object>( new Object[]{
-//			"name",
-//			"type", 
-//			"index"}
-//	    );
+		// Button and search text for search by field in menu bar
+		final JButton sortButton = new JButton("  Sort By...  ");
+		
+	    // Picker box for type of search
+		final JComboBox<?> sortPickerBox = new JComboBox<Object>( new Object[]{
+			"name",
+			"type", 
+			"index"}
+	    );
 		
 		// action listener on search button
 		searchButton.addActionListener(new ActionListener(){
@@ -178,6 +151,38 @@ public class GameGUI extends JPanel {
         frame.pack();
         frame.setVisible(true);
         
+	}
+	
+	static void readFile(Scanner sf) {
+		HashMap<Integer, CaveElement> caveElements = new HashMap<Integer, CaveElement>();
+		Scanner line;
+		String strLine;
+		while (sf.hasNext()) {
+        	strLine = sf.nextLine().trim();
+        	System.out.println(strLine);
+        	if (strLine.length() == 0) continue;
+        	if (strLine.contains("\\")) continue;
+        	line = new Scanner (strLine).useDelimiter ("\\s*:\\s*");
+
+		    //switch based off of the incoming parameters
+		    switch(strLine.charAt(0)) {
+		    	case 'p' : 
+		    		Party p = addParty(line); 
+		    		caveElements.put(p.index, p);
+		    		break;
+		    	case 'c' : 
+		    		Creature c = addCreature(caveElements, line);
+		    		caveElements.put(c.index, c);
+		    		break;
+		    	case 't' : 
+		    		addTreasure(caveElements, line);
+		    		break;
+		    	case 'a' : 
+		    		addArtifact(caveElements, line);
+		    		break;
+		    	case 'j' : 									break; // jobs not yet supported
+		    }
+		}
 	}
 	
 	// Public constructor, used to build out visual elements for inspecting each party in the cave
@@ -265,89 +270,137 @@ public class GameGUI extends JPanel {
 	
 	// create new party, assign to cave
 	// p:<index>:<name>
-	public static void addParty(String attributes[]) {
-		int index = Integer.parseInt(attributes[1]);
-		String name = attributes[2];
-		Party myParty = new Party(index, name);
+	public static Party addParty(Scanner thisItem) {
 		
+		// Create new party and add it to the cave
+		Party myParty = new Party(thisItem);
 		sorcerersCave.addParty(myParty);
+		
+		// return party to be added to HashMap
+		return myParty;
 	}
 
 	// create new creature assign to party
 	// c:<index>:<type>:<name>:<party>:<empathy>:<fear>:<carrying capacity>
-	public static void addCreature(String attributes[]) {
-		// set instance variables from incoming array of strings
-		int index = Integer.parseInt(attributes[1]);
-		String type = attributes[2];
-		String name = attributes[3];
-		int party = Integer.parseInt(attributes[4]);
-		int empathy = Integer.parseInt(attributes[5]);
-		int fear = Integer.parseInt(attributes[6]);
-		int carryingCapacity = Integer.parseInt(attributes[7]);
+	public static Creature addCreature(HashMap<Integer, CaveElement> theseElements, Scanner thisItem) {
 		
 		// create creature from attributes
-		Creature myCreature = new Creature(index, type, name, party, empathy, fear, carryingCapacity);
+		Creature myCreature = new Creature(thisItem);
 		
-		// find creatures party
-		if (party == 0){
+		// find party within HashMap from created creature
+		Party myParty = (Party) theseElements.get(myCreature.getParty());
+		
+		// add creature to cave or party
+		if (myParty == null) {
 			sorcerersCave.addDetachedCreature(myCreature);
-		} else {
-			Party myParty = sorcerersCave.getPartyByIndex(party);
-			// add creature to its party
-			myParty.addCreature(myCreature);
-		}
+	    } else {
+	    	myParty.addCreature(myCreature);
+	    }
+		
+		// return creature to be added to HashMap
+		return myCreature;
+		
 	}
 
 	// create new treasure, assign appropriately
 	// t:<index>:<type>:<creature>:<weight>:<value>
-	public static void addTreasure(String attributes[]) {
-		// set instance variables from incoming array of strings
-		int index = Integer.parseInt(attributes[1]);
-		String type = attributes[2];
-		int creature = Integer.parseInt(attributes[3]);
-		double weight = Double.parseDouble(attributes[4]);
-		int value = Integer.parseInt(attributes[5]);
+	public static void addTreasure(HashMap<Integer, CaveElement> theseElements, Scanner thisItem) {
 		
 		// create treasure from attributes
-		Treasure myTreasure = new Treasure(index, type, creature, weight, value);
+		Treasure myTreasure = new Treasure(thisItem);
 		
-		// determine if treasure is claimed by a creature
-		if (creature == 0) {
+		// find creature within HashMap from created treasure
+		Creature myCreature = (Creature) theseElements.get(myTreasure.getCreature());
+		
+		// add treasure to cave or creature
+		if (myCreature == null) {
 			sorcerersCave.addUndiscoveredTreasure(myTreasure);
 		} else {
-			for (Party myParty: sorcerersCave.getParties()) {
-				if (!(null == myParty.getCreatureByIndex(creature))) {
-					myParty.getCreatureByIndex(creature).addTreasure(myTreasure);
-				}
-			}
+			myCreature.addTreasure(myTreasure);
 		}
+		
 	}
 
 	// create new artifact, assign appropriately
 	// a:<index>:<type>:<creature>[:<name>]
-	public static void addArtifact(String attributes[]) {
-		// set instance variables from incoming array of strings
-		int index = Integer.parseInt(attributes[1]);
-		String type = attributes[2];
-		int creature = Integer.parseInt(attributes[3]);
-		String name = null;
-		// assign name or leave null
-		if (attributes.length > 4){
-			name = attributes[4];
-		}		
-
-		Artifact myArtifact = new Artifact(index, type, creature, name);
+	public static void addArtifact(HashMap<Integer, CaveElement> theseElements, Scanner thisItem) {
+		
+		// create artifact from attributes
+		Artifact myArtifact = new Artifact(thisItem);
 	
-		// determine if treasure is claimed by a creature
-		if (creature == 0) {
+		// find creature within HashMap from created artifact
+		Creature myCreature = (Creature) theseElements.get(myArtifact.getCreature());
+		
+		if (myCreature == null) {
 			sorcerersCave.addUndiscoveredArtifact(myArtifact);
 		} else {
-			for (Party myParty: sorcerersCave.getParties()) {
-				if (!(null == myParty.getCreatureByIndex(creature))) {
-					myParty.getCreatureByIndex(creature).addArtifact(myArtifact);
-				}
-			}
+			myCreature.addArtifact(myArtifact);
 		}
+		
+	}
+	
+	/*
+	 *  Sort by methods
+	 */
+	
+	public static Party sortCreaturesByName(Party myParty) {
+		// Sort creatures using name comparator
+		Collections.sort(myParty.getCreatures(), new CreatureNameComparator());
+		
+		// return sorted party
+		return myParty;
+	}
+	
+	public static Party sortCreaturesByHeight(Party myParty) {
+		// Sort creatures using name comparator
+		Collections.sort(myParty.getCreatures(), new CreatureHeightComparator());
+		
+		// return sorted party
+		return myParty;
+	}
+	
+	public static Party sortCreaturesByAge(Party myParty) {
+		// Sort creatures using name comparator
+		Collections.sort(myParty.getCreatures(), new CreatureAgeComparator());
+		
+		// return sorted party
+		return myParty;
+	}
+	
+	public static Party sortCreaturesByWeight(Party myParty) {
+		// Sort creatures using name comparator
+		Collections.sort(myParty.getCreatures(), new CreatureWeightComparator());
+		
+		// return sorted party
+		return myParty;
+	}
+	
+	public static Party sortCreaturesByEmpathy(Party myParty) {
+		// Sort creatures using name comparator
+		Collections.sort(myParty.getCreatures(), new CreatureEmpathyComparator());
+		
+		// return sorted party
+		return myParty;
+	}
+	
+	public static Party sortCreaturesByFear(Party myParty) {
+		// Sort creatures using name comparator
+		Collections.sort(myParty.getCreatures(), new CreatureFearComparator());
+		
+		// return sorted party
+		return myParty;
+	}
+	
+	public static Party sortTreasureByValue(Party myParty) {
+		Collections.sort(myParty.getCreatures(), new TreasureValueComparator());
+		
+		return myParty;
+	}
+	
+	public static Party sortTreasureByWeight(Party myParty) {
+		Collections.sort(myParty.getCreatures(), new TreasureWeightComparator());
+		
+		return myParty;
 	}
 	
 	// Helper method to return the first digit of an integer for

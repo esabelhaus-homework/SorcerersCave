@@ -7,9 +7,10 @@
 
 package game;
 
+import java.util.Scanner;
+
 public class Treasure extends CaveElement {
 	// define internal private variables
-	private int index;
 	private String type;
 	private int creature;
 	private double weight;
@@ -17,12 +18,13 @@ public class Treasure extends CaveElement {
 	
 	// constructor
 	// requires index and type
-	Treasure(int myIndex, String myType, int myCreature, double myWeight, int myValue) {
-		this.index = myIndex;
-		this.type = myType;
-		this.creature = myCreature;
-		this.weight = myWeight;
-		this.value = myValue;
+	Treasure(Scanner itemScanner) {
+		itemScanner.next();
+		this.index = itemScanner.nextInt();
+		this.type = itemScanner.next();
+		this.creature = itemScanner.nextInt();
+		this.weight = itemScanner.nextDouble();
+		this.value = itemScanner.nextInt();
 	}
 	
 	// get the creature who owns this treasure
@@ -30,10 +32,6 @@ public class Treasure extends CaveElement {
 		return creature;
 	}
 	
-	// get the index of this treasure
-	public int getIndex() {
-		return index;
-	}
 	
 	// get type
 	public String getType() {
@@ -44,5 +42,13 @@ public class Treasure extends CaveElement {
 	public String toString() {
 		return "          " + type + " - weight:" + 
 				String.valueOf(weight) + ", value: " + String.valueOf(value) + "\n";
+	}
+
+	public double getWeight() {
+		return weight;
+	}
+
+	public int getValue() {
+		return value;
 	}
 }

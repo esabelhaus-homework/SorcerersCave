@@ -8,17 +8,18 @@
 package game;
 
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Party extends CaveElement {
 	// assign private instance variables to be populated after creation
-	private int index;
 	private String name;	
 	private ArrayList<Creature> creatures = new ArrayList<Creature>();
 
 	// constructor, requires index and name
-	Party(int myIndex, String myName) {
-		this.index = myIndex;
-		this.name = myName;
+	Party(Scanner itemScanner) {
+		itemScanner.next();
+		this.index = itemScanner.nextInt();
+		this.name = itemScanner.next();
 	}
 	
 	// helper method to get creature by index

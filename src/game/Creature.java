@@ -8,30 +8,35 @@
 package game;
 
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Creature extends CaveElement {
 	// assign private instance variables to be populated
-	private int index;
 	private String name;
 	private String type;
+	private int age;
+	private int height;
+	private int weight;
 	private int party;
-	private int empathy;
-	private int fearValue;
-	private int carryingCapacity;
+	private double empathy;
+	private double fearValue;
+	private double carryingCapacity;
 	private ArrayList<Treasure> treasures = new ArrayList<Treasure>();
 	private ArrayList<Artifact> artifacts = new ArrayList<Artifact>();
 	
 	// Constructor
 	// requires index, type, name, party index, empathy value, fear value, and carrying capacity
 	// values can be null aside from index, type, name, and party
-	Creature(int myIndex, String myType, String myName, int myParty, int e, int fv, int cc) {
-		this.index = myIndex;
-		this.type = myType;
-		this.name = myName;
-		this.party = myParty;
-		this.empathy = e;
-		this.fearValue = fv;
-		this.carryingCapacity = cc;
+	// values for age, height, and weight will be added after creation through GUI
+	Creature(Scanner itemScanner) {
+		itemScanner.next();
+		this.index = itemScanner.nextInt();
+		this.type = itemScanner.next();
+		this.name = itemScanner.next();
+		this.party = itemScanner.nextInt();
+		this.empathy = itemScanner.nextDouble();
+		this.fearValue = itemScanner.nextDouble();
+		this.carryingCapacity = itemScanner.nextDouble();
 	}
 	
 	// get party index
@@ -52,6 +57,51 @@ public class Creature extends CaveElement {
 	// get type
 	public String getType() {
 		return type;
+	}
+	
+	//get fear value
+	public double getFear() {
+		return fearValue;
+	}
+
+	// get empathy
+	public double getEmpathy() {
+		return empathy;
+	}
+
+	// get carrying capacity
+	public double getCarryingCapacity() {
+		return carryingCapacity;
+	}
+
+	// get age
+	public int getAge() {
+		return age;
+	}
+	
+	// get age
+	public int getHeight() {
+		return height;
+	}
+		
+	// get age
+	public int getWeight() {
+		return weight;
+	}
+	
+	// set age
+	public void setAge(int myAge) {
+		this.age = myAge;
+	}
+	
+	// set height
+	public void setHeight(int myHeight) {
+		this.height = myHeight;
+	}
+		
+	// set weight
+	public void setWeight(int myWeight) {
+		this.weight = myWeight;
 	}
 	
 	// expose treasures without exposing private object
@@ -148,4 +198,5 @@ public class Creature extends CaveElement {
 		}
 		return creatureString;
 	}
+	
 }

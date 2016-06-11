@@ -7,20 +7,22 @@
 
 package game;
 
+import java.util.Scanner;
+
 public class Artifact extends CaveElement {
 	// define internal private variables
-	private int index;
 	private String type;
 	private int creature;
 	private String name;
 	
 	// constructor
 	// requires index, type, creature, and name
-	Artifact(int myIndex, String myType, int myCreature, String myName) {
-		this.index = myIndex;
-		this.type = myType;
-		this.creature = myCreature;
-		this.name = myName;
+	Artifact(Scanner itemScanner) {
+		itemScanner.next();
+		this.index = itemScanner.nextInt();
+		this.type = itemScanner.next();
+		this.creature = itemScanner.nextInt();
+		this.name = itemScanner.next();
 	}
 	
 	// get creature who owns this treasure
@@ -28,10 +30,6 @@ public class Artifact extends CaveElement {
 		return creature;
 	}
 	
-	// get index of artifact
-	public int getIndex() {
-		return index;
-	}
 	
 	// get name
 	public String getName() {

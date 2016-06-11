@@ -1,10 +1,7 @@
 package game;
 
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.Scanner;
 
 import org.junit.Test;
 
@@ -16,50 +13,15 @@ public class TestSorcerersCave {
 		
 		String filePath = basePath + "SmallSimpleCave.txt";
 		
-		FileInputStream fstream = new FileInputStream(filePath);
-		
-		// get the object of DataInputStream
-		DataInputStream in = new DataInputStream(fstream);
-		
-		@SuppressWarnings("resource")
-		BufferedReader br = new BufferedReader(new InputStreamReader(in));
+		Scanner sfin = null;
+        sfin = new Scanner (filePath);
+        
+        // read attributes from file
+        GameGUI.readFile(sfin);
+        
+        // close file
+        sfin.close();
 	
-		String strLine;
-	
-		//Read File Line By Line
-		while ((strLine = br.readLine()) != null) {
-		    //ignore blanks
-		    if(!strLine.trim().equals("\n"))
-		    {
-		    	if (strLine.contains("/")) {
-		    		// ignore comments
-		    		continue;
-		    	}
-		    	String data[] = strLine.trim().split(":");
-		    	// trim extra spaces for consistency sake
-		    	for (int i = 0; i < data.length; i++){
-		    	    data[i] = data[i].trim();
-		    	}
-		    	//switch based off of the incoming parameters
-		    	switch(data[0]) {
-		    		case "p": 
-		    			GameGUI.addParty(data);
-		    			break;
-		    		case "c": 
-		    			GameGUI.addCreature(data);
-		    			break;
-		    		case "t": 
-		    			GameGUI.addTreasure(data);
-		    			break;
-		    		case "a": 
-		    			GameGUI.addArtifact(data);
-		    			break;
-		    		case "j": 
-		    			// jobs not yet supported
-		    			break;
-		    	}
-		    }
-		}
 	}
 	
 	// Testing data
@@ -84,7 +46,6 @@ public class TestSorcerersCave {
 		assert(GameGUI.sorcerersCave.getUndiscoveredTreasure().get(0).getType().equals("Gold"));
 		assert(GameGUI.sorcerersCave.getUndiscoveredTreasure().get(0).getIndex() == 30002);
 		for(Party party: GameGUI.sorcerersCave.getParties()) {
-			assert(party.getClass() == new Party(1, "foo").getClass());
 			assert(party.getName().equals("Unity"));
 			assert(party.getIndex() == 10001);
 			
