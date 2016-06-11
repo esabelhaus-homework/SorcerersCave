@@ -1,26 +1,16 @@
 package game;
 
 import java.io.IOException;
-import java.util.Scanner;
 
 import org.junit.Test;
 
 public class TestSorcerersCave {
 	
+	private static GameGUI testGUI;
+	
 	public static void main(String args[]) throws IOException {
 	
-		String basePath = System.getProperty("user.dir");
-		
-		String filePath = basePath + "SmallSimpleCave.txt";
-		
-		Scanner sfin = null;
-        sfin = new Scanner (filePath);
-        
-        // read attributes from file
-        GameGUI.readFile(sfin);
-        
-        // close file
-        sfin.close();
+        testGUI = new GameGUI();
 	
 	}
 	
@@ -41,11 +31,11 @@ public class TestSorcerersCave {
 	
 	@Test
 	public void testingCave() {
-		assert(GameGUI.sorcerersCave.getClass() == new Cave().getClass());
+		assert(testGUI.sorcerersCave.getClass() == new Cave().getClass());
 		
-		assert(GameGUI.sorcerersCave.getUndiscoveredTreasure().get(0).getType().equals("Gold"));
-		assert(GameGUI.sorcerersCave.getUndiscoveredTreasure().get(0).getIndex() == 30002);
-		for(Party party: GameGUI.sorcerersCave.getParties()) {
+		assert(testGUI.sorcerersCave.getUndiscoveredTreasure().get(0).getType().equals("Gold"));
+		assert(testGUI.sorcerersCave.getUndiscoveredTreasure().get(0).getIndex() == 30002);
+		for(Party party: testGUI.sorcerersCave.getParties()) {
 			assert(party.getName().equals("Unity"));
 			assert(party.getIndex() == 10001);
 			
@@ -67,7 +57,7 @@ public class TestSorcerersCave {
 					}
 				}
 			}
-			for(Creature creature: GameGUI.sorcerersCave.getDetechedCreatures()) {
+			for(Creature creature: testGUI.sorcerersCave.getDetechedCreatures()) {
 				if (creature.getIndex() == 20003) {
 					assert(creature.getName().equals("Brandon"));
 					assert(creature.getArtifacts().isEmpty());
