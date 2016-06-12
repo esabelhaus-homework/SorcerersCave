@@ -8,6 +8,7 @@ package game;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.FileNotFoundException;
@@ -24,6 +25,7 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -47,6 +49,8 @@ public class GameGUI extends JPanel {
 	// make text area for search result population
 	private JTextArea searchResult = new JTextArea(20,20);
 
+	private final Integer[] nums = new Integer[1000]; 
+	
 	public static void main(String[] args) throws IOException {
 		GameGUI gui = new GameGUI();
 	}
@@ -125,9 +129,13 @@ public class GameGUI extends JPanel {
 		JComponent searchResults = makeSearchPanel(sorcerersCave);
 		tabbedPane.addTab("Search The Cave", searchIcon, searchResults);
 
+		for (int i = 0; i < 1000; i++)
+			nums[i] = i;
+		
 		//Iterate over every party, detached creature and undiscovered item
 		for (Party myParty: sorcerersCave.getParties()) {
-			JComponent panel = makePartyPanel(myParty);
+			myParty = sortCreaturesByName(myParty);
+			JComponent panel = makePartyPanel(myParty, charIcon);
 			tabbedPane.addTab(myParty.getName(), partyIcon, panel);
 		}
 
@@ -137,8 +145,6 @@ public class GameGUI extends JPanel {
 		JComponent undiscovered = makeUndiscoveredPanel(sorcerersCave);
 		tabbedPane.addTab("Undiscovered Items", itemIcon, undiscovered);
 
-		
-		
 		JTree tree = new JTree(createNodes("My Cave"));
 	    JScrollPane treeView = new JScrollPane(tree);
 	    tabbedPane.addTab("Tree View", partyIcon, treeView);
@@ -165,10 +171,10 @@ public class GameGUI extends JPanel {
 
 		// Picker box for type of search
 		final JComboBox<?> searchPickerBox = new JComboBox<Object>( new Object[]{
-				"name",
-				"type", 
-		"index"}
-				);
+			"name",
+			"type", 
+			"index"}
+		);
 
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.add(searchButton);
@@ -270,14 +276,33 @@ public class GameGUI extends JPanel {
 	}
 
 	// insert party information into a non editable text panel
-	protected JComponent makePartyPanel(Party thisParty) {
+	protected JComponent makePartyPanel(Party thisParty, ImageIcon charIcon) {
+		// Vertical Creature Tabbed pane for party
+		JTabbedPane partyTabbedPane = new JTabbedPane(JTabbedPane.LEFT);
+		partyTabbedPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+		
+		// JPanel container for party panel
+		JPanel partyPanel = new JPanel();
 		JTextArea partay = new JTextArea(20,20);
 		partay.setWrapStyleWord(true);
 		partay.setLineWrap(true);
 		partay.setEditable(false);
 		partay.setText(thisParty.toString());
 		JScrollPane jsp = new JScrollPane (partay);
-		return jsp;
+		
+		JComponent menuBar = createSortMenu(partay, thisParty);
+		
+		partyPanel.setLayout(new BorderLayout());
+		partyPanel.add(menuBar, BorderLayout.NORTH);
+		partyPanel.add(jsp, BorderLayout.CENTER);
+		
+		partyTabbedPane.addTab("Sortable Party View", partyPanel);
+		
+		for (Creature creature: thisParty.getCreatures()) {
+			partyTabbedPane.addTab(creature.getName(), charIcon, createCreaturePanel(creature));
+		}
+		
+		return partyTabbedPane;
 	}
 
 	// Returns an ImageIcon, or null if the path was invalid.
@@ -291,50 +316,157 @@ public class GameGUI extends JPanel {
 		}
 	}
 
-	// sort type picker box
-	private JComboBox<String> sortTypePickerBox;
-	// Picker box for sort parameter
-	private JComboBox<String> sortParamPickerBox;
 	
 	
-	private JComponent makeSortMenu(JComponent thisComponent, Party thisParty) {
+	
+	// create a sort menu to be inserted on party all panels
+	protected JComponent createSortMenu(JTextArea thisTextArea, Party thisParty) {
 
+		JLabel sortLabel = new JLabel(" Sort By... ");
+		// sort type picker box
+		JComboBox<String> sortTypePickerBox;
+		// Picker box for sort parameter
+		JComboBox<String> sortParamPickerBox;
+		
 		// Button and text for sort by field in side menu bar
-		JButton sortButton = new JButton("  Sort By...  ");
+		JButton sortButton = new JButton("Sort");
 
 		// Sorting radio buttons to toggle sort type
 
+		String[] typeSelection     = { "Creature", "Treasure" };
 		String[] creatureSelection = {"Age", "Empathy", "Fear", "Height", "Name", "Weight"};
 		String[] treasureSelection = {"Value", "Weight"};
 		
-		sortTypePickerBox = new JComboBox<String>();
-		sortTypePickerBox.addItem("Creature");
-		sortTypePickerBox.addItem("Treasure");
-		sortParamPickerBox = new JComboBox<String>();
+		sortTypePickerBox = new JComboBox<String>(typeSelection);
+		sortParamPickerBox = new JComboBox<String>(creatureSelection);
 		
 		sortTypePickerBox.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if("creature" == sortTypePickerBox.getSelectedItem().toString().toLowerCase()) {
+				if("creature".equals(sortTypePickerBox.getSelectedItem().toString().toLowerCase())) {
 					DefaultComboBoxModel<String> model = new DefaultComboBoxModel<String>( creatureSelection );
 					sortParamPickerBox.setModel(model);
+					validate();
 				} else {
 					DefaultComboBoxModel<String> model = new DefaultComboBoxModel<String>( treasureSelection );
 					sortParamPickerBox.setModel(model);
+					validate();
 				}
+			}
+		});
+		
+		sortButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (sortTypePickerBox.getSelectedItem() == null) {
+					JOptionPane.showMessageDialog(frame, "Please select Creature of Treasure"); 
+					return;
+				}
+				if (sortParamPickerBox.getSelectedItem() == null) {
+					JOptionPane.showMessageDialog(frame, "Please select a parameter to sort on"); 
+					return;
+				}
+				
+				Party myParty = thisParty;
+				
+				switch (sortTypePickerBox.getSelectedItem().toString().toLowerCase()) {
+				case "creature":
+					//"Age", "Empathy", "Fear", "Height", "Name", "Weight"
+					switch (sortParamPickerBox.getSelectedItem().toString().toLowerCase()) {
+					case "age"	   : 	myParty = sortCreaturesByAge(thisParty); break;
+					case "empathy" :	myParty = sortCreaturesByEmpathy(thisParty); break;
+					case "fear"	   : 	myParty = sortCreaturesByFear(thisParty); break;
+					case "height"  : 	myParty = sortCreaturesByHeight(thisParty); break;
+					case "name"	   : 	myParty = sortCreaturesByName(thisParty); break;
+					case "weight"  :    myParty = sortCreaturesByWeight(thisParty); break;
+					}
+				case "treasure":
+					switch (sortParamPickerBox.getSelectedItem().toString().toLowerCase()) {
+					case "value"  : myParty = sortTreasureByValue(thisParty);
+					case "weight" : myParty = sortTreasureByWeight(thisParty);
+					}
+				}
+				
+				thisTextArea.setText(myParty.toString());
+				validate();
+				return;
 			}
 		});
 
 		JMenuBar menuBar = new JMenuBar();
 
+		menuBar.add(sortLabel);
+		menuBar.add(sortTypePickerBox);
+		menuBar.add(sortParamPickerBox);
+		menuBar.add(sortButton);
 		menuBar.add(Box.createHorizontalGlue());
 		
-		return null;
+		return menuBar;
 	}
 
 	protected JComponent createCreaturePanel(Creature thisCreature) {
-
-		return null;
+		// create container for input fields
+		JPanel creaturePanel = new JPanel();
+		creaturePanel.setLayout(new BorderLayout());
+		
+		// create button for updating fields
+		JButton updateCreatureButton = new JButton("Update Creature");
+		
+		// create text fields and labels for updating attributes
+		JComboBox<Integer> age = new JComboBox<Integer>(nums);
+		JLabel ageLabel = new JLabel("Age: ");
+		JComboBox<Integer> height = new JComboBox<Integer>(nums);
+		JLabel heightLabel = new JLabel("Height: ");
+		JComboBox<Integer> weight = new JComboBox<Integer>(nums);
+		JLabel weightLabel = new JLabel("Weight: ");
+		
+		JPanel updateCreature = new JPanel(new GridLayout(4, 2));
+		
+		updateCreature.add(ageLabel);
+		updateCreature.add(age);
+		updateCreature.add(heightLabel);
+		updateCreature.add(height);
+		updateCreature.add(weightLabel);
+		updateCreature.add(weight);
+		updateCreature.add(updateCreatureButton);
+		
+		
+		// text area for existing creature
+		JTextArea myCreatureInfo = new JTextArea(20,10);
+		myCreatureInfo.setWrapStyleWord(true);
+		myCreatureInfo.setLineWrap(true);
+		myCreatureInfo.setEditable(false);
+		myCreatureInfo.setText(thisCreature.toString());
+		
+		// update creature info, refresh text
+		updateCreatureButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if ((Integer) age.getSelectedItem() > 0){
+					thisCreature.setAge((Integer) age.getSelectedItem());
+				}
+				if ((Integer) height.getSelectedItem() > 0) {
+					thisCreature.setHeight((Integer) height.getSelectedItem());
+				}
+				if ((Integer) weight.getSelectedItem() > 0) {
+					thisCreature.setWeight((Integer) weight.getSelectedItem());
+				}
+				
+				myCreatureInfo.setText(thisCreature.toString());
+				validate();
+				return;
+			}
+		});
+		
+		// Add creature info to scrolling panel
+		JScrollPane myCreature = new JScrollPane(myCreatureInfo);
+		
+		// attach text scrolling panel to creature panel
+		creaturePanel.add(myCreature, BorderLayout.CENTER);
+		creaturePanel.add(updateCreature, BorderLayout.EAST);
+		
+		
+		return creaturePanel;
 	}
 
 	// create new party, assign to cave
@@ -408,6 +540,7 @@ public class GameGUI extends JPanel {
 
 	}
 
+	// Create tree view
 	public DefaultMutableTreeNode createNodes(String title) {
 		DefaultMutableTreeNode top = new DefaultMutableTreeNode(title);
 		DefaultMutableTreeNode pn, cn;
@@ -421,10 +554,10 @@ public class GameGUI extends JPanel {
 					cn.add(new DefaultMutableTreeNode("T: " + t.getType()));
 				for(Artifact a: c.getArtifacts())
 					cn.add(new DefaultMutableTreeNode("A: " + a.getType()));
-			} // end for each creature
-		} // end for each party
+			}
+		}
 		return top;
-	} // end method createNodes
+	}
 
 
 	/*
@@ -467,6 +600,8 @@ public class GameGUI extends JPanel {
 		// Sort creatures using name comparator
 		Collections.sort(myParty.getCreatures(), new CreatureEmpathyComparator());
 
+		System.out.println(myParty.toString());
+		
 		// return sorted party
 		return myParty;
 	}
@@ -480,13 +615,16 @@ public class GameGUI extends JPanel {
 	}
 
 	public Party sortTreasureByValue(Party myParty) {
-		Collections.sort(myParty.getCreatures(), new TreasureValueComparator());
-
+		for (Creature creature: myParty.getCreatures()){
+			Collections.sort(creature.getTreasures(), new TreasureValueComparator());
+		}
 		return myParty;
 	}
 
 	public Party sortTreasureByWeight(Party myParty) {
-		Collections.sort(myParty.getCreatures(), new TreasureWeightComparator());
+		for (Creature creature: myParty.getCreatures()){
+			Collections.sort(creature.getTreasures(), new TreasureWeightComparator());
+		}
 
 		return myParty;
 	}

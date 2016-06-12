@@ -12,10 +12,10 @@ import java.util.Comparator;
 public class TreasureWeightComparator implements Comparator<CaveElement> {
 
 	@Override
-    public int compare(CaveElement c1, CaveElement c2) {
-        if( ((Treasure) c1).getWeight() >  ((Treasure) c2).getWeight())
+    public int compare(CaveElement t1, CaveElement t2) {
+        if( ((Treasure) t1).getWeight() >  ((Treasure) t2).getWeight())
             return 1;
-        else if( ((Treasure) c1).getWeight() <  ((Treasure) c2).getWeight())
+        else if( ((Treasure) t1).getWeight() <  ((Treasure) t2).getWeight())
             return -1;
         else
             return 0;

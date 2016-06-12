@@ -183,11 +183,15 @@ public class Creature extends CaveElement {
 	// and space delimited
 	public String toString() {
 		String creatureString = "  Creature:" + 
-			"\n    Features:\n      Name - " + name + 
+			"\n    Features: " + 
+			"\n      Name: " + name +
+			"\n      Age: " + String.valueOf(age) +
+			"\n      Height: " + String.valueOf(height) +
+			"\n      Weight: " + String.valueOf(weight) +
 			"\n      Type: " + type + 
-		    "\n      Empathy - " + String.valueOf(empathy) + 
-		    "\n      Fear value - " + String.valueOf(fearValue) + 
-		    "\n      Carrying capacity - " + carryingCapacity + 
+		    "\n      Empathy: " + String.valueOf(empathy) + 
+		    "\n      Fear value: " + String.valueOf(fearValue) + 
+		    "\n      Carrying capacity: " + carryingCapacity + 
 		    "\n    Treasures:\n";
 		for(Treasure treasure: treasures){
 			creatureString += treasure.toString();
