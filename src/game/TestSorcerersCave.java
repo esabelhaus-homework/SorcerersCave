@@ -1,16 +1,12 @@
 package game;
 
-import java.io.IOException;
-
 import org.junit.Test;
 
 public class TestSorcerersCave {
 	
 	private static GameGUI testGUI;
 	
-	public static void main(String args[]) throws IOException {
-	
-        testGUI = new GameGUI();
+	public static void main(String args[]) {
 	
 	}
 	
@@ -31,6 +27,11 @@ public class TestSorcerersCave {
 	
 	@Test
 	public void testingCave() {
+		String basePath = System.getProperty("user.dir");
+		String fileName[] = { basePath + "/SmallSimpleCave.txt" };
+		
+        testGUI = new GameGUI(fileName);
+        
 		assert(testGUI.sorcerersCave.getClass() == new Cave().getClass());
 		
 		assert(testGUI.sorcerersCave.getUndiscoveredTreasure().get(0).getType().equals("Gold"));
@@ -65,5 +66,21 @@ public class TestSorcerersCave {
 				}
 			}
 		}
+	}
+	
+	@Test
+	public void testSorting() {
+		String basePath = System.getProperty("user.dir");
+		String fileName[] = { basePath + "/SmallSimpleCave.txt" };
+		
+        testGUI = new GameGUI(fileName);
+		
+		// Lucy should have a fear of 22
+		Party myParty = testGUI.sorcerersCave.getPartyByIndex(10001);
+		assert(myParty.getCreatures().get(0).getFear() == 22);
+		
+		// once sorted, Lucy will come after Jane
+		Party mySortedParty = testGUI.sortCreaturesByFear(myParty);
+		assert(mySortedParty.getCreatures().get(0).getFear() == 15);
 	}
 }
