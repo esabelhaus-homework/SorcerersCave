@@ -24,6 +24,8 @@ public class TestSorcerersCave {
 	//t : 30003 : Gems : 20002 : 10 : 10000
 	//  a:<index>:<type>:<creature>[:<name>]
 	//a : 40001 : Wand : 20001 : ElderWand
+	//  j:<index>:<name>:<creature index>:<time>[:<required artifact:type>:<number>]*
+	//j : 50000 : Swing : 20001 : 5.00 : Stone : 0 : Potions : 0 : Wands : 1 : Weapons : 0
 	
 	@Test
 	public void testingCave() {
@@ -62,6 +64,10 @@ public class TestSorcerersCave {
 					assert(creature.getArtifacts().isEmpty());
 					assert(creature.getTreasures().isEmpty());
 				}
+			}
+			for(Job job: testGUI.sorcerersCave.getJobs()) {
+				assert(job.getIndex() == 50001);
+				assert(job.worker == (Creature) testGUI.getCaveElementByIndex(20001));
 			}
 		}
 	}

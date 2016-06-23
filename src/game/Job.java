@@ -1,8 +1,13 @@
+/*
+ * FILE: 	Job.java
+ * DATE:  	06/23/2016
+ * AUTHOR: 	Eric Sabelhaus
+ * PURPOSE:	Store and manage Job threads, provide GUI elements to manage jobs
+ */
 package game;
 
 import java.awt.Color;
 import java.util.HashMap;
-import java.util.Random;
 import java.util.Scanner;
 
 import javax.swing.JButton;
@@ -12,19 +17,31 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingConstants;
 
 public class Job extends CaveElement implements Runnable {
-
-	static Random rn = new Random ();
+	// link to JPanel which displays jobs
 	JPanel parent;
+	// Creature performing work
 	Creature worker = null;
+	
 	int jobIndex;
 	long jobTime;
 	String jobName = "";
+	
+	// display thread progress as it advances
 	JProgressBar pm = new JProgressBar ();
-	boolean goFlag = true, noKillFlag = true;
+	
+	// process thread or not
+	boolean goFlag = true; 
+	// kill job?
+    boolean noKillFlag = true;
+    
+    // JButtons used to suspend, resume, or cancel Job
 	JButton jbGo   = new JButton ("Stop");
 	JButton jbKill = new JButton ("Cancel");
+	
+	// preset status to suspended
 	Status status = Status.SUSPENDED;
 
+	// enumerate possible Job statuses
 	enum Status {RUNNING, SUSPENDED, WAITING, DONE};
 
 	public Job (HashMap <Integer, CaveElement> hc, JPanel cv, Scanner sc) {
@@ -50,15 +67,18 @@ public class Job extends CaveElement implements Runnable {
 
 	} // end constructor
 
+	// set to either waiting or running
 	public void toggleGoFlag () {
 		goFlag = !goFlag; // ND; should be synced, and notify waiting sync in running loop
 	} // end method toggleRunFlag
 
+	// cancel Job
 	public void setKillFlag () {
 		noKillFlag = false;
 		jbKill.setBackground (Color.red);
 	} // end setKillFlag
 
+	// display status of Job
 	void showStatus (Status st) {
 		status = st;
 		switch (status) {
@@ -81,12 +101,14 @@ public class Job extends CaveElement implements Runnable {
 		} // end switch on status
 	} // end showStatus
 
+	// run Job
 	public void run () {
 		long time = System.currentTimeMillis();
 		long startTime = time;
 		long stopTime = time + 1000 * jobTime;
 		double duration = stopTime - time;
 
+		// perform synchronized work processing on Job
 		synchronized (worker.getParty()) {
 			while (worker.busyFlag) {
 				showStatus (Status.WAITING);
@@ -99,6 +121,7 @@ public class Job extends CaveElement implements Runnable {
 			worker.busyFlag = true;
 		} // end synchronized on worker
 
+		// wait until job can run
 		while (time < stopTime && noKillFlag) {
 			try {
 				Thread.sleep (100);
@@ -112,8 +135,10 @@ public class Job extends CaveElement implements Runnable {
 			} // end if stepping
 		} // end running
 
+		// complete job
 		pm.setValue (100);
 		showStatus (Status.DONE);
+		// notify worker of available thread to perform next Job
 		synchronized (worker.getParty()) {
 			worker.busyFlag = false; 
 			worker.getParty().notifyAll ();

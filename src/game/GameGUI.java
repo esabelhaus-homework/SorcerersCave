@@ -203,7 +203,9 @@ public class GameGUI extends JPanel {
 		// if it is root, just display text
 		// otherwise, display the appropriate element in the right pane of the split pane
 		DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-	    if (node.isRoot()) {
+	    if (null == node) {
+	    	System.out.println("User clicked in empty space");
+	    } else if (node.isRoot()) {
 	    	treeSplitPane.setRightComponent(new JTextArea("You've selected the whole cave, too broad of a selection"));
 	    	treeSplitPane.repaint();
 	    	validate();
@@ -572,7 +574,7 @@ public class GameGUI extends JPanel {
 		DefaultMutableTreeNode pn, cn;
 		// handle detached creatures
 		for(Creature c: sorcerersCave.getDetechedCreatures()) {
-			top.add(new DefaultMutableTreeNode(new TreeNodeObject(c.getIndex(), c.getName())));
+			top.add(new DefaultMutableTreeNode(new TreeNodeObject(c.getIndex(), "Creature: " + c.getName())));
 		}
 		// handle undiscovered treasure
 		for(Treasure t: sorcerersCave.getUndiscoveredTreasure()) {
@@ -584,10 +586,10 @@ public class GameGUI extends JPanel {
 		}
 		// handle all of the remaining items in the multi tree
 		for(Party p: sorcerersCave.getParties()) {       
-			pn = new DefaultMutableTreeNode(new TreeNodeObject(p.getIndex(), p.getName()));
+			pn = new DefaultMutableTreeNode(new TreeNodeObject(p.getIndex(), "Party: " + p.getName()));
 			top.add(pn);
 			for(Creature c: p.getCreatures()) { 
-				cn = new DefaultMutableTreeNode(new TreeNodeObject(c.getIndex(), c.getName()));
+				cn = new DefaultMutableTreeNode(new TreeNodeObject(c.getIndex(), "Creature: " + c.getName()));
 				pn.add(cn); 
 				for(Treasure t: c.getTreasures())
 					cn.add(new DefaultMutableTreeNode(new TreeNodeObject(t.getIndex(), "Treasure: " + t.getType())));
@@ -597,7 +599,6 @@ public class GameGUI extends JPanel {
 		}
 		return top;
 	}
-
 
 	/*
 	 *  Sort by methods
