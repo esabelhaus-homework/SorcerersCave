@@ -17,12 +17,14 @@ public class Creature extends CaveElement {
 	private int age;
 	private int height;
 	private int weight;
-	private int party;
+	private int partyIndex;
+	private Party party;
 	private double empathy;
 	private double fearValue;
 	private double carryingCapacity;
 	private ArrayList<Treasure> treasures = new ArrayList<Treasure>();
 	private ArrayList<Artifact> artifacts = new ArrayList<Artifact>();
+	public boolean busyFlag;
 	
 	// Constructor
 	// requires index, type, name, party index, empathy value, fear value, and carrying capacity
@@ -33,14 +35,18 @@ public class Creature extends CaveElement {
 		this.index = itemScanner.nextInt();
 		this.type = itemScanner.next();
 		this.name = itemScanner.next();
-		this.party = itemScanner.nextInt();
+		this.partyIndex = itemScanner.nextInt();
 		this.empathy = itemScanner.nextDouble();
 		this.fearValue = itemScanner.nextDouble();
 		this.carryingCapacity = itemScanner.nextDouble();
 	}
 	
 	// get party index
-	public int getParty() {
+	public int getPartyIndex() {
+		return partyIndex;
+	}
+	
+	public Party getParty() {
 		return party;
 	}
 	
@@ -177,6 +183,10 @@ public class Creature extends CaveElement {
 	// add artifact to creature
 	public void addArtifact(Artifact myArtifact) {
 		artifacts.add(myArtifact);
+	}
+	
+	public void addParty(Party myParty) {
+		party = myParty;
 	}
 	
 	// return creature string broken by new lines

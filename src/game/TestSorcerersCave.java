@@ -31,8 +31,6 @@ public class TestSorcerersCave {
 		String fileName[] = { basePath + "/SmallSimpleCave.txt" };
 		
         testGUI = new GameGUI(fileName);
-        
-		assert(testGUI.sorcerersCave.getClass() == new Cave().getClass());
 		
 		assert(testGUI.sorcerersCave.getUndiscoveredTreasure().get(0).getType().equals("Gold"));
 		assert(testGUI.sorcerersCave.getUndiscoveredTreasure().get(0).getIndex() == 30002);
@@ -79,8 +77,9 @@ public class TestSorcerersCave {
 		Party myParty = testGUI.sorcerersCave.getPartyByIndex(10001);
 		assert(myParty.getCreatures().get(0).getFear() == 22);
 		
+		Party mySortedParty = testGUI.sorcerersCave.getPartyByIndex(10001);
 		// once sorted, Lucy will come after Jane
-		Party mySortedParty = testGUI.sortCreaturesByFear(myParty);
+		testGUI.sortCreaturesByFear();
 		assert(mySortedParty.getCreatures().get(0).getFear() == 15);
 	}
 }

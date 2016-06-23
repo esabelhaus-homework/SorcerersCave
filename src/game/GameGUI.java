@@ -11,11 +11,12 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Scanner;
 
 import javax.swing.Box;
@@ -31,12 +32,11 @@ import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTree;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 // GUI and driver to test objects
@@ -46,80 +46,55 @@ public class GameGUI extends JPanel {
 
 	// Initiate GUI methods
 	JFrame frame = new JFrame();
-	
+
 	// create image icons to be used by whole application
 	protected ImageIcon partyIcon = createImageIcon("img/party.png");
 	protected ImageIcon charIcon = createImageIcon("img/orc.gif");
 	protected ImageIcon itemIcon = createImageIcon("img/wand.png");
 	protected ImageIcon searchIcon = createImageIcon("img/search.png");
+
+	// embed all job views in this
+	protected JPanel parentJobPanel = new JPanel();
+
+	// create tree globally to make it accessible to
+	// sorting menu
+	protected JTree tree;
 	
+	// creates split pane globally to make it accessible
+	// to the event handler on the tree
+	protected JSplitPane treeSplitPane;
 	
-	public Cave sorcerersCave = new Cave();
+	public Cave sorcerersCave = null;
 
 	// make text area for search result population
 	private JTextArea searchResult = new JTextArea(20,20);
 
 	private final Integer[] nums = new Integer[1000]; 
-	
+
 	public static void main(String[] args) throws IOException {
+		@SuppressWarnings("unused")
 		GameGUI gui = new GameGUI();
-	}
-
-	// Read in lines of data file, add cave elements in the process
-	void readFile(Scanner sf) {
-		// create hashmap of cave elements for efficient creation of multi-tree structure
-		HashMap<Integer, CaveElement> caveElements = new HashMap<Integer, CaveElement>();
-		Scanner line;
-		String strLine;
-		while (sf.hasNext()) {
-			strLine = sf.nextLine().trim();
-			System.out.println(strLine);
-			if (strLine.length() == 0) continue;
-			if (strLine.contains("\\")) continue;
-			line = new Scanner (strLine).useDelimiter ("\\s*:\\s*");
-
-			//switch based off of the incoming parameters
-			switch(strLine.charAt(0)) {
-			case 'p' : 
-				Party p = addParty(line); 
-				caveElements.put(p.index, p);
-				break;
-			case 'c' : 
-				Creature c = addCreature(caveElements, line);
-				caveElements.put(c.index, c);
-				break;
-			case 't' : 
-				addTreasure(caveElements, line);
-				break;
-			case 'a' : 
-				addArtifact(caveElements, line);
-				break;
-			case 'j' : break; // jobs not yet supported
-			}
-		}
 	}
 
 	// non argument constructor for normal operation
 	public GameGUI() {this (new String [0]);}
-	
-	// Public constructor, used to build out visual elements for inspecting each party in the cave
+
+	// Public constructor, used to build out visual elements 
+	// for inspecting each party in the cave
 	// as well as viewing undiscovered treasure if there is any
 	// allow string to be passed in for file selection during testing
 	public GameGUI(String[] args) {
-		// create instance variables for determinig whether to use args or chosen file
+
+		// create instance variables for determining whether to use args or chosen file
 		String fileName = null;
 		JFileChooser chooser = null;
 		Scanner sfin = null;
-		
-		// instantiate frame
-		frame = new JFrame("Sorcerers Cave");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		
+
 		// instantiate file chooser in current directory
 		if (args.length > 0) {
 			fileName = args[0];
 		} else {
-			chooser = new JFileChooser(System.getProperty("."));
+			chooser = new JFileChooser(".");
 		}
 
 		// try reading in the file and scanning it
@@ -137,68 +112,111 @@ public class GameGUI extends JPanel {
 		} catch (FileNotFoundException e) {
 			JOptionPane.showMessageDialog(null, "File not found.");
 		}
-		
 
-		// read attributes from file
-		readFile(sfin);
+		sorcerersCave = new Cave(sfin, parentJobPanel);
 
-		// close file
-		sfin.close();
+		parentJobPanel.setLayout (new GridLayout (0, 5));
+		JScrollPane scrollingJobPanel = new JScrollPane (parentJobPanel);
+
+		// instantiate frame
+		frame = new JFrame("Sorcerers Cave");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		// create horizontal tabbed pane for navigation
 		JTabbedPane tabbedPane = new JTabbedPane();
 		tabbedPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
 
-		// add search pane as first tab in tabbed pane
-		JComponent searchResults = makeSearchPanel(sorcerersCave);
-		tabbedPane.addTab("Search The Cave", searchIcon, searchResults);
-
 		// create array of integers for setting age, height, and weight in creature
 		// modification view
 		for (int i = 0; i < 1000; i++)
 			nums[i] = i;
+
+		// create tree view for view of whole cave
+		// implement action listener to update treeViewSelected
+		// to display the selected tree node 
+		tree = new JTree(createNodes("My Cave"));
+				
+		tree.addMouseListener(new MouseAdapter() {
+		    public void mouseClicked(MouseEvent me) {
+		    	doMouseClicked();
+		    }
+		});
 		
-		//Iterate over every party, detached creature and undiscovered item
-		for (Party myParty: sorcerersCave.getParties()) {
-			myParty = sortCreaturesByName(myParty);
-			JComponent panel = makePartyPanel(myParty);
-			tabbedPane.addTab(myParty.getName(), partyIcon, panel);
-		}
-
-		// create jcomponent for deteched creatures
-		JComponent detached = makeDetachedCreaturePanel(sorcerersCave);
-		tabbedPane.addTab("Wandering Creatures", charIcon, detached);
-
-		// create jcomponent for undiscovered treasure/artifacts
-		JComponent undiscovered = makeUndiscoveredPanel(sorcerersCave);
-		tabbedPane.addTab("Undiscovered Items", itemIcon, undiscovered);
-
-		// create tree view for larger view of whole cave
-		JTree tree = new JTree(createNodes("My Cave"));
-	    JScrollPane treeView = new JScrollPane(tree);
-	    tabbedPane.addTab("Tree View", partyIcon, treeView);
+		// create JPanel to house all tree related elements
+		JPanel treePanel = new JPanel();
+		treePanel.setLayout(new BorderLayout());
 		
-	    // validate tab info on click
-	    tabbedPane.addChangeListener(new ChangeListener() {
-	        public void stateChanged(ChangeEvent e) {
-	            System.out.println("Tab: " + tabbedPane.getSelectedIndex());
-	            validate();
-	        }
-	    });
-	    
-		//Create and set up the window.
+		// tree sorting menu
+		JComponent sortMenu = createSortMenu();
+		treePanel.add(sortMenu, BorderLayout.NORTH);
+		
+		// create scroll panel to embed tree within
+		JScrollPane treeView = new JScrollPane(tree);		
+		// create tree view selected pane to a generic jtext area
+		// give a hint about the tree functionality
+		JComponent treeViewSelected = new JTextArea("Try selecting a node from the tree!");
+		
+		// embed tree and selection component into split pane
+		treeSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeView, treeViewSelected);
+		
+		// divide sides evenly at first
+		treeSplitPane.setDividerLocation(400);
+		
+		// add split pane to tree panel
+		treePanel.add(treeSplitPane, BorderLayout.CENTER);
+		
+		// add tab for cave explorer, which contains tree and sort menu
+		tabbedPane.addTab("Cave Explorer", treePanel);
+		
+		// add search pane as first tab in tabbed pane
+		JComponent searchResults = createSearchPanel();
+		tabbedPane.addTab("Search The Cave", searchIcon, searchResults);
+
+		// set preferred size of tabbed pane
+		tabbedPane.setPreferredSize(new Dimension(800,400));
+
+		// set preferred size of job panel
+		scrollingJobPanel.setPreferredSize(new Dimension(800,200));
+
+		// add tabbed pane and job panel to larger vertical split pane
+		JSplitPane mainSplitPane = new JSplitPane (JSplitPane.VERTICAL_SPLIT, tabbedPane, scrollingJobPanel);
+
+		// set divider to 2/3 and 1/3 respectively
+		mainSplitPane.setDividerLocation(400);
+
+		// set up the frame, add main split pane
 		frame.setLayout(new BorderLayout ());
-		frame.add(tabbedPane, BorderLayout.CENTER);
-		frame.setPreferredSize(new Dimension(800,400));
+		frame.add(mainSplitPane, BorderLayout.CENTER);
+		frame.setPreferredSize(new Dimension(800,600));
 
+		// handle some random exceptions when swing closes
+		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		
 		//Display the window.
 		frame.pack();
 		frame.setVisible(true);
 	}
 	
-
+	// mouse click handler for displaying tree node objects in right hand side of tree split pane
+	protected void doMouseClicked() {
+		// get the currently selected node
+		// if it is root, just display text
+		// otherwise, display the appropriate element in the right pane of the split pane
+		DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+	    if (node.isRoot()) {
+	    	treeSplitPane.setRightComponent(new JTextArea("You've selected the whole cave, too broad of a selection"));
+	    	treeSplitPane.repaint();
+	    	validate();
+	    } else {
+	    	TreeNodeObject to = (TreeNodeObject) node.getUserObject();
+	    	CaveElement ce = getCaveElementByIndex(to.getIndex());
+	    	treeSplitPane.setRightComponent(createCaveElementPanel(ce));
+	    	validate();
+	    }
+	}
 	
-	protected JComponent makeSearchPanel(Cave thisCave) {
+	// creates panel to be added as search tab
+	protected JComponent createSearchPanel() {
 		// JPanel container for search panel
 		JPanel searchPanel = new JPanel();
 
@@ -208,10 +226,10 @@ public class GameGUI extends JPanel {
 
 		// Picker box for type of search
 		final JComboBox<?> searchPickerBox = new JComboBox<Object>( new Object[]{
-			"name",
-			"type", 
-			"index"}
-		);
+				"name",
+				"type", 
+				"index"
+		});
 
 		// create search bar
 		JMenuBar menuBar = new JMenuBar();
@@ -238,28 +256,29 @@ public class GameGUI extends JPanel {
 					return;
 				}
 				// Switch on search type based off picker box
-				System.out.println(searchPickerBox.getSelectedItem().toString());
 				String myType = searchPickerBox.getSelectedItem().toString();
 
 				if (myType == "name") {
-					System.out.println("name");
-					resultString = getCaveItemByName(searchString);
+					resultString = getCaveItemByName(searchString).toString();
 				}
 
 				if (myType == "type") {
-					System.out.println("type");
-					resultString = getCaveItemByType(searchString);
+					resultString = getCaveItemByType(searchString).toString();
 				}
 
 				if (myType == "index") {
-					System.out.println("index");
 					int myIndex = Integer.parseInt(searchString);
 					if ( (myIndex < 10000) || (myIndex > 60000) ){
 						System.out.println("index out of bounds");
 						JOptionPane.showMessageDialog(frame, "Index must be between 10000 and 59999");
 						return;
 					}
-					resultString = getCaveItemByIndex(myIndex);
+					CaveElement result = getCaveElementByIndex(myIndex);
+					if (null == result) {
+						resultString = "No Results Found In Search!";
+					} else {
+						resultString = result.toString();
+					}
 				}
 
 				System.out.println(resultString);
@@ -280,48 +299,27 @@ public class GameGUI extends JPanel {
 
 	}
 
-	// insert all undiscovered items into a non editable text panel
-	protected JComponent makeUndiscoveredPanel(Cave thisCave) {
-		String undiscovered = "";
-		for (Artifact myArtifact: thisCave.getUndiscoveredArtifacts()) {
-			undiscovered += myArtifact.toString();
+	// helper method to allow simple creation
+	// of cave element panel for tree view purposes
+	protected JComponent createCaveElementPanel(CaveElement ce) {
+		JComponent caveComponent = null;
+		
+		// get the class name of the cave element
+		// split on the period in "class game.<CaveElement Class Name>"
+		// switch based on the name, and return the appropriate JComponent for that element
+		switch (ce.getClass().toString().split("\\.")[1]) {
+			case "Party": caveComponent = createPartyPanel((Party) ce); break;
+			case "Creature": caveComponent = createCreaturePanel((Creature) ce); break;
+			case "Artifact": caveComponent = createItemPanel((Artifact) ce); break; 
+			case "Treasure": caveComponent = createItemPanel((Treasure) ce); break;
 		}
-
-		for (Treasure myTreasure: thisCave.getUndiscoveredTreasure()){
-			undiscovered += myTreasure;
-		}
-
-		JTextArea uPanel = new JTextArea(20,20);
-		uPanel.setWrapStyleWord(true);
-		uPanel.setLineWrap(true);
-		uPanel.setEditable(false);
-		uPanel.setText(undiscovered);
-		JScrollPane jsp = new JScrollPane (uPanel);
-		return jsp;
+		return caveComponent;
 	}
-
-	// insert all undiscovered items into a non editable text panel
-	protected JComponent makeDetachedCreaturePanel(Cave thisCave) {
-		String detached = "";
-		for (Creature myCreature: thisCave.getDetechedCreatures()) {
-			detached += myCreature.toString();
-		}
-
-		JTextArea uPanel = new JTextArea(20,20);
-		uPanel.setWrapStyleWord(true);
-		uPanel.setLineWrap(true);
-		uPanel.setEditable(false);
-		uPanel.setText(detached);
-		JScrollPane jsp = new JScrollPane (uPanel);
-		return jsp;
-	}
+	
 
 	// insert party information into a non editable text panel
-	protected JComponent makePartyPanel(Party thisParty) {
-		// Vertical Creature Tabbed pane for party
-		JTabbedPane partyTabbedPane = new JTabbedPane(JTabbedPane.LEFT);
-		partyTabbedPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
-		
+	protected JComponent createPartyPanel(Party thisParty) {
+
 		// JPanel container for party panel
 		JPanel partyPanel = new JPanel();
 		JTextArea partay = new JTextArea(20,20);
@@ -330,24 +328,92 @@ public class GameGUI extends JPanel {
 		partay.setEditable(false);
 		partay.setText(thisParty.toString());
 		JScrollPane jsp = new JScrollPane (partay);
-		
-		JComponent menuBar = createSortMenu(partay, thisParty);
-		
+
 		partyPanel.setLayout(new BorderLayout());
-		partyPanel.add(menuBar, BorderLayout.NORTH);
 		partyPanel.add(jsp, BorderLayout.CENTER);
-		
-		// create first vertical tab as sortable party text
-		partyTabbedPane.addTab("Sortable Party View", partyIcon, partyPanel);
-		
-		// create vertical tabs for each creature
-		for (Creature creature: thisParty.getCreatures()) {
-			partyTabbedPane.addTab(creature.getName(), charIcon, createCreaturePanel(creature));
-		}
-		
-		return partyTabbedPane;
+
+		return partyPanel;
 	}
 
+	protected JComponent createCreaturePanel(Creature thisCreature) {
+		// create container for input fields
+		JPanel creaturePanel = new JPanel();
+		creaturePanel.setLayout(new BorderLayout());
+
+		// create button for updating fields
+		JButton updateCreatureButton = new JButton("Update Creature");
+
+		// create text fields and labels for updating attributes
+		JComboBox<Integer> age = new JComboBox<Integer>(nums);
+		JLabel ageLabel = new JLabel("Age: ");
+		JComboBox<Integer> height = new JComboBox<Integer>(nums);
+		JLabel heightLabel = new JLabel("Height: ");
+		JComboBox<Integer> weight = new JComboBox<Integer>(nums);
+		JLabel weightLabel = new JLabel("Weight: ");
+
+		// create jpanel of creature update form
+		JPanel updateCreature = new JPanel(new GridLayout(4, 2));
+
+		// add elements to update form
+		updateCreature.add(ageLabel);
+		updateCreature.add(age);
+		updateCreature.add(heightLabel);
+		updateCreature.add(height);
+		updateCreature.add(weightLabel);
+		updateCreature.add(weight);
+		updateCreature.add(updateCreatureButton);
+
+		// text area for existing creature
+		JTextArea myCreatureInfo = new JTextArea(20,10);
+		myCreatureInfo.setWrapStyleWord(true);
+		myCreatureInfo.setLineWrap(true);
+		myCreatureInfo.setEditable(false);
+		myCreatureInfo.setText(thisCreature.toString());
+
+		// update creature info, refresh text
+		updateCreatureButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+				if ((Integer) age.getSelectedItem() > 0){
+					thisCreature.setAge((Integer) age.getSelectedItem());
+				}
+
+				if ((Integer) height.getSelectedItem() > 0) {
+					thisCreature.setHeight((Integer) height.getSelectedItem());
+				}
+
+				if ((Integer) weight.getSelectedItem() > 0) {
+					thisCreature.setWeight((Integer) weight.getSelectedItem());
+				}
+
+				myCreatureInfo.setText(thisCreature.toString());
+				validate();
+				return;
+			}
+		});
+
+		// Add creature info to scrolling panel
+		JScrollPane myCreature = new JScrollPane(myCreatureInfo);
+
+		// attach text scrolling panel to creature panel
+		creaturePanel.add(myCreature, BorderLayout.CENTER);
+		creaturePanel.add(updateCreature, BorderLayout.EAST);
+
+		return creaturePanel;
+	}
+	
+	// insert item info into a non editable text panel
+	protected JComponent createItemPanel(CaveElement ce) {
+		JTextArea uPanel = new JTextArea(20,20);
+		uPanel.setWrapStyleWord(true);
+		uPanel.setLineWrap(true);
+		uPanel.setEditable(false);
+		uPanel.setText(ce.toString());
+		JScrollPane jsp = new JScrollPane (uPanel);
+		return jsp;
+	}
+	
 	// Returns an ImageIcon, or null if the path was invalid.
 	protected ImageIcon createImageIcon(String path) {
 		java.net.URL imgURL = GameGUI.class.getResource(path);
@@ -359,18 +425,15 @@ public class GameGUI extends JPanel {
 		}
 	}
 
-	
-	
-	
 	// create a sort menu to be inserted on party all panels
-	protected JComponent createSortMenu(JTextArea thisTextArea, Party thisParty) {
+	protected JComponent createSortMenu() {
 		// create sorting label to tidy up the menu bar
 		JLabel sortLabel = new JLabel(" Sort By... ");
 		// sort type picker box
 		JComboBox<String> sortTypePickerBox;
 		// Picker box for sort parameter
 		JComboBox<String> sortParamPickerBox;
-		
+
 		// Button and text for sort by field in side menu bar
 		JButton sortButton = new JButton("Sort");
 
@@ -378,11 +441,11 @@ public class GameGUI extends JPanel {
 		String[] typeSelection     = { "Creature", "Treasure" };
 		String[] creatureSelection = {"Age", "Empathy", "Fear", "Height", "Name", "Weight"};
 		String[] treasureSelection = {"Value", "Weight"};
-		
+
 		// sort picker boxes, initialized with creature selection
 		sortTypePickerBox = new JComboBox<String>(typeSelection);
 		sortParamPickerBox = new JComboBox<String>(creatureSelection);
-		
+
 		// action listener on sort picker box to update the fields by type
 		sortTypePickerBox.addActionListener(new ActionListener(){
 			@Override
@@ -398,7 +461,7 @@ public class GameGUI extends JPanel {
 				}
 			}
 		});
-		
+
 		// action listener on sort button
 		sortButton.addActionListener(new ActionListener(){
 			@Override
@@ -412,31 +475,75 @@ public class GameGUI extends JPanel {
 					JOptionPane.showMessageDialog(frame, "Please select a parameter to sort on"); 
 					return;
 				}
-				
-				// instantiate party to be populated by sorted party on sort
-				Party myParty = thisParty;
-				
+
 				// two leveled switch case to handle sorting efficiently based off
-				// selected parameters
+				// selected parameters in JComboBox defined above
+				// also creates string to add as root item of tree when
+				// recreated
+				String caveSortName = "My Cave Sorted By: ";
 				switch (sortTypePickerBox.getSelectedItem().toString().toLowerCase()) {
-				case "creature":
-					switch (sortParamPickerBox.getSelectedItem().toString().toLowerCase()) {
-					case "age"	   : 	myParty = sortCreaturesByAge(thisParty); break;
-					case "empathy" :	myParty = sortCreaturesByEmpathy(thisParty); break;
-					case "fear"	   : 	myParty = sortCreaturesByFear(thisParty); break;
-					case "height"  : 	myParty = sortCreaturesByHeight(thisParty); break;
-					case "name"	   : 	myParty = sortCreaturesByName(thisParty); break;
-					case "weight"  :    myParty = sortCreaturesByWeight(thisParty); break;
-					}
-				case "treasure":
-					switch (sortParamPickerBox.getSelectedItem().toString().toLowerCase()) {
-					case "value"  : myParty = sortTreasureByValue(thisParty);
-					case "weight" : myParty = sortTreasureByWeight(thisParty);
-					}
+					case "creature":
+						caveSortName += " Creature and ";
+						switch (sortParamPickerBox.getSelectedItem().toString().toLowerCase()) {
+							case "age"	   : 	
+								sortCreaturesByAge();
+								caveSortName += "Age";
+								break;
+							case "empathy" :	
+								sortCreaturesByEmpathy();
+								caveSortName += "Empathy";
+								break;
+							case "fear"	   : 	
+								sortCreaturesByFear();
+								caveSortName += "Fear";
+								break;
+							case "height"  : 	
+								sortCreaturesByHeight();
+								caveSortName += "Height";
+								break;
+							case "name"	   : 	
+								sortCreaturesByName();
+								caveSortName += "Name";
+								break;
+							case "weight"  :    
+								sortCreaturesByWeight();
+								caveSortName += "Weight";
+								break;
+						}
+						break;
+					case "treasure":
+						caveSortName += " Treasures and ";
+						switch (sortParamPickerBox.getSelectedItem().toString().toLowerCase()) {
+							case "value"  : 
+								sortTreasureByValue();
+								caveSortName += "Value";
+								break;
+							case "weight" : 
+								sortTreasureByWeight();
+								caveSortName += "Weight";
+								break;
+						}
+					break;
 				}
+
+				// create newly sorted tree
+				tree = new JTree(createNodes(caveSortName));
 				
-				// update the text area of the sorted party panel in vertical tabs
-				thisTextArea.setText(myParty.toString());
+				// add mouse listener to new tree
+				tree.addMouseListener(new MouseAdapter() {
+					@Override
+				    public void mouseClicked(MouseEvent me) {
+				    	doMouseClicked();
+				    }
+				});
+				
+				// add new tree to scroll panel
+				JScrollPane treeView = new JScrollPane(tree);
+				
+				// update tree in gui
+				treeSplitPane.setLeftComponent(treeView);
+				
+				// validate gui
 				validate();
 				return;
 			}
@@ -451,160 +558,41 @@ public class GameGUI extends JPanel {
 		menuBar.add(sortParamPickerBox);
 		menuBar.add(sortButton);
 		menuBar.add(Box.createHorizontalGlue());
-		
+
 		return menuBar;
 	}
 
-	protected JComponent createCreaturePanel(Creature thisCreature) {
-		// create container for input fields
-		JPanel creaturePanel = new JPanel();
-		creaturePanel.setLayout(new BorderLayout());
-		
-		// create button for updating fields
-		JButton updateCreatureButton = new JButton("Update Creature");
-		
-		// create text fields and labels for updating attributes
-		JComboBox<Integer> age = new JComboBox<Integer>(nums);
-		JLabel ageLabel = new JLabel("Age: ");
-		JComboBox<Integer> height = new JComboBox<Integer>(nums);
-		JLabel heightLabel = new JLabel("Height: ");
-		JComboBox<Integer> weight = new JComboBox<Integer>(nums);
-		JLabel weightLabel = new JLabel("Weight: ");
-		
-		// create jpanel of creature update form
-		JPanel updateCreature = new JPanel(new GridLayout(4, 2));
-		
-		// add elements to update form
-		updateCreature.add(ageLabel);
-		updateCreature.add(age);
-		updateCreature.add(heightLabel);
-		updateCreature.add(height);
-		updateCreature.add(weightLabel);
-		updateCreature.add(weight);
-		updateCreature.add(updateCreatureButton);
-		
-		// text area for existing creature
-		JTextArea myCreatureInfo = new JTextArea(20,10);
-		myCreatureInfo.setWrapStyleWord(true);
-		myCreatureInfo.setLineWrap(true);
-		myCreatureInfo.setEditable(false);
-		myCreatureInfo.setText(thisCreature.toString());
-		
-		// update creature info, refresh text
-		updateCreatureButton.addActionListener(new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if ((Integer) age.getSelectedItem() > 0){
-					thisCreature.setAge((Integer) age.getSelectedItem());
-				}
-				if ((Integer) height.getSelectedItem() > 0) {
-					thisCreature.setHeight((Integer) height.getSelectedItem());
-				}
-				if ((Integer) weight.getSelectedItem() > 0) {
-					thisCreature.setWeight((Integer) weight.getSelectedItem());
-				}
-				
-				myCreatureInfo.setText(thisCreature.toString());
-				validate();
-				return;
-			}
-		});
-		
-		// Add creature info to scrolling panel
-		JScrollPane myCreature = new JScrollPane(myCreatureInfo);
-		
-		// attach text scrolling panel to creature panel
-		creaturePanel.add(myCreature, BorderLayout.CENTER);
-		creaturePanel.add(updateCreature, BorderLayout.EAST);
-		
-		return creaturePanel;
-	}
+	
 
-	// create new party, assign to cave
-	// p:<index>:<name>
-	public Party addParty(Scanner thisItem) {
-
-		// Create new party and add it to the cave
-		Party myParty = new Party(thisItem);
-		sorcerersCave.addParty(myParty);
-
-		// return party to be added to HashMap
-		return myParty;
-	}
-
-	// create new creature assign to party
-	// c:<index>:<type>:<name>:<party>:<empathy>:<fear>:<carrying capacity>
-	public Creature addCreature(HashMap<Integer, CaveElement> theseElements, Scanner thisItem) {
-
-		// create creature from attributes
-		Creature myCreature = new Creature(thisItem);
-
-		// find party within HashMap from created creature
-		Party myParty = (Party) theseElements.get(myCreature.getParty());
-
-		// add creature to cave or party
-		if (myParty == null) {
-			sorcerersCave.addDetachedCreature(myCreature);
-		} else {
-			myParty.addCreature(myCreature);
-		}
-
-		// return creature to be added to HashMap
-		return myCreature;
-
-	}
-
-	// create new treasure, assign appropriately
-	// t:<index>:<type>:<creature>:<weight>:<value>
-	public void addTreasure(HashMap<Integer, CaveElement> theseElements, Scanner thisItem) {
-
-		// create treasure from attributes
-		Treasure myTreasure = new Treasure(thisItem);
-
-		// find creature within HashMap from created treasure
-		Creature myCreature = (Creature) theseElements.get(myTreasure.getCreature());
-
-		// add treasure to cave or creature
-		if (myCreature == null) {
-			sorcerersCave.addUndiscoveredTreasure(myTreasure);
-		} else {
-			myCreature.addTreasure(myTreasure);
-		}
-
-	}
-
-	// create new artifact, assign appropriately
-	// a:<index>:<type>:<creature>[:<name>]
-	public void addArtifact(HashMap<Integer, CaveElement> theseElements, Scanner thisItem) {
-
-		// create artifact from attributes
-		Artifact myArtifact = new Artifact(thisItem);
-
-		// find creature within HashMap from created artifact
-		Creature myCreature = (Creature) theseElements.get(myArtifact.getCreature());
-
-		if (myCreature == null) {
-			sorcerersCave.addUndiscoveredArtifact(myArtifact);
-		} else {
-			myCreature.addArtifact(myArtifact);
-		}
-
-	}
-
-	// Create tree view element
+	// Create tree view using custom tree node objects which contain the name and index
+	// of the object in reference. Index will be used to render view of object within
+	// the gui
 	public DefaultMutableTreeNode createNodes(String title) {
 		DefaultMutableTreeNode top = new DefaultMutableTreeNode(title);
 		DefaultMutableTreeNode pn, cn;
+		// handle detached creatures
+		for(Creature c: sorcerersCave.getDetechedCreatures()) {
+			top.add(new DefaultMutableTreeNode(new TreeNodeObject(c.getIndex(), c.getName())));
+		}
+		// handle undiscovered treasure
+		for(Treasure t: sorcerersCave.getUndiscoveredTreasure()) {
+			top.add(new DefaultMutableTreeNode(new TreeNodeObject(t.getIndex(), "Treasure: " + t.getType())));
+		}
+		// handle undiscovered artifacts
+		for(Artifact a: sorcerersCave.getUndiscoveredArtifacts()) {
+			top.add(new DefaultMutableTreeNode(new TreeNodeObject(a.getIndex(), "Artifact: " + a.getName())));
+		}
+		// handle all of the remaining items in the multi tree
 		for(Party p: sorcerersCave.getParties()) {       
-			pn = new DefaultMutableTreeNode(p.getName());
-			top.add(pn);              
+			pn = new DefaultMutableTreeNode(new TreeNodeObject(p.getIndex(), p.getName()));
+			top.add(pn);
 			for(Creature c: p.getCreatures()) { 
-				cn = new DefaultMutableTreeNode(c.getName());
+				cn = new DefaultMutableTreeNode(new TreeNodeObject(c.getIndex(), c.getName()));
 				pn.add(cn); 
 				for(Treasure t: c.getTreasures())
-					cn.add(new DefaultMutableTreeNode("T: " + t.getType()));
+					cn.add(new DefaultMutableTreeNode(new TreeNodeObject(t.getIndex(), "Treasure: " + t.getType())));
 				for(Artifact a: c.getArtifacts())
-					cn.add(new DefaultMutableTreeNode("A: " + a.getType()));
+					cn.add(new DefaultMutableTreeNode(new TreeNodeObject(a.getIndex(), "Artifact: " + a.getName())));
 			}
 		}
 		return top;
@@ -615,71 +603,64 @@ public class GameGUI extends JPanel {
 	 *  Sort by methods
 	 */
 
-	public Party sortCreaturesByName(Party myParty) {
+	public void sortCreaturesByName() {
 		// Sort creatures using name comparator
-		Collections.sort(myParty.getCreatures(), new CreatureNameComparator());
-
-		// return sorted party
-		return myParty;
+		for (Party myParty: sorcerersCave.getParties()){
+			Collections.sort(myParty.getCreatures(), new CreatureNameComparator());
+		}
 	}
 
-	public Party sortCreaturesByHeight(Party myParty) {
+	public void sortCreaturesByHeight() {
 		// Sort creatures using name comparator
-		Collections.sort(myParty.getCreatures(), new CreatureHeightComparator());
-
-		// return sorted party
-		return myParty;
+		for (Party myParty: sorcerersCave.getParties()){
+			Collections.sort(myParty.getCreatures(), new CreatureHeightComparator());
+		}
 	}
 
-	public Party sortCreaturesByAge(Party myParty) {
+	public void sortCreaturesByAge() {
 		// Sort creatures using name comparator
-		Collections.sort(myParty.getCreatures(), new CreatureAgeComparator());
-
-		// return sorted party
-		return myParty;
+		for (Party myParty: sorcerersCave.getParties()){
+			Collections.sort(myParty.getCreatures(), new CreatureAgeComparator());
+		}
 	}
 
-	public Party sortCreaturesByWeight(Party myParty) {
+	public void sortCreaturesByWeight() {
 		// Sort creatures using name comparator
-		Collections.sort(myParty.getCreatures(), new CreatureWeightComparator());
-
-		// return sorted party
-		return myParty;
+		for (Party myParty: sorcerersCave.getParties()){
+			Collections.sort(myParty.getCreatures(), new CreatureWeightComparator());
+		}
 	}
 
-	public Party sortCreaturesByEmpathy(Party myParty) {
+	public void sortCreaturesByEmpathy() {
 		// Sort creatures using name comparator
-		Collections.sort(myParty.getCreatures(), new CreatureEmpathyComparator());
-
-		System.out.println(myParty.toString());
-		
-		// return sorted party
-		return myParty;
+		for (Party myParty: sorcerersCave.getParties()){
+			Collections.sort(myParty.getCreatures(), new CreatureEmpathyComparator());
+		}
 	}
 
-	public Party sortCreaturesByFear(Party myParty) {
+	public void sortCreaturesByFear() {
 		// Sort creatures using name comparator
-		Collections.sort(myParty.getCreatures(), new CreatureFearComparator());
-
-		// return sorted party
-		return myParty;
+		for (Party myParty: sorcerersCave.getParties()){
+			Collections.sort(myParty.getCreatures(), new CreatureFearComparator());
+		}
 	}
 
-	public Party sortTreasureByValue(Party myParty) {
+	public void sortTreasureByValue() {
 		// Sort treasure carried by creatures by their value
-		for (Creature creature: myParty.getCreatures()){
-			Collections.sort(creature.getTreasures(), new TreasureValueComparator());
+		for (Party myParty: sorcerersCave.getParties()){
+			for (Creature creature: myParty.getCreatures()){
+				Collections.sort(creature.getTreasures(), new TreasureValueComparator());
+			}
 		}
-		return myParty;
 	}
 
-	public Party sortTreasureByWeight(Party myParty) {
+	public void sortTreasureByWeight() {
 		// Sort treasure carried by creatures by their weight
-		for (Creature creature: myParty.getCreatures()){
-			Collections.sort(creature.getTreasures(), new TreasureWeightComparator());
+		for (Party myParty: sorcerersCave.getParties()){
+			for (Creature creature: myParty.getCreatures()){
+				Collections.sort(creature.getTreasures(), new TreasureWeightComparator());
+			}
 		}
-
-		return myParty;
 	}
 
 	// Helper method to return the first digit of an integer for
@@ -689,81 +670,81 @@ public class GameGUI extends JPanel {
 		x = Math.abs(x);
 		return (int) Math.floor(x / Math.pow(10, Math.floor(Math.log10(x))));
 	}
-
+	
 	// Search for item by index
-	public String getCaveItemByIndex(int index) {
-		String caveItem = "";
+	public CaveElement getCaveElementByIndex(int index) {
+		CaveElement caveItem = null;
 		int i = firstDigit(index);
 		switch (i) {
 		// for a party
 		case 1:
 			if (!(sorcerersCave.getPartyByIndex(index) == null)){
-				caveItem = sorcerersCave.getPartyByIndex(index).toString();
+				caveItem = (Party) sorcerersCave.getPartyByIndex(index);
 			}
 			break;
-			// for a creature
+		// for a creature
 		case 2:
 			for(Party party: sorcerersCave.getParties()) {
 				if (!(null == party.getCreatureByIndex(index))) {
-					caveItem += party.getCreatureByIndex(index).toString();
+					caveItem = (Creature) party.getCreatureByIndex(index);
 				} 
 			}
 			for(Creature creature: sorcerersCave.getDetechedCreatures()) {
 				if (index == creature.getIndex()) {
-					caveItem += creature.toString();
+					caveItem = (Creature) creature;
 				}
 			}
 			break;
-			// for treasures
+		// for treasures
 		case 3:
 			for(Party party: sorcerersCave.getParties()) {
 				for(Creature creature: party.getCreatures()){
 					if (!(null == creature.getTreasureByIndex(index))) {
-						caveItem += creature.getTreasureByIndex(index).toString();
+						caveItem = (Treasure) creature.getTreasureByIndex(index);
 					}
 				} 
 			}
 			for(Creature creature: sorcerersCave.getDetechedCreatures()) {
 				for(Treasure treasure: creature.getTreasures()){
 					if (index == treasure.getIndex()) {
-						caveItem += treasure.toString();
+						caveItem = (Treasure) treasure;
 					}
 				}
 			}
 			for(Treasure treasure: sorcerersCave.getUndiscoveredTreasure()){
 				if (index == treasure.getIndex()) {
-					caveItem += treasure.toString();
+					caveItem = (Treasure) treasure;
 				}
 			}
 			break;
-			// for artifacts
+		// for artifacts
 		case 4:
 			for(Party party: sorcerersCave.getParties()) {
 				for(Creature creature: party.getCreatures()){
 					if (!(null == creature.getArtifactByIndex(index))) {
-						caveItem += creature.getArtifactByIndex(index).toString();
+						caveItem = (Artifact) creature.getArtifactByIndex(index);
 					}
 				} 
 			}
 			for(Creature creature: sorcerersCave.getDetechedCreatures()) {
 				for(Artifact artifact: creature.getArtifacts()) {
 					if (index == artifact.getIndex()) {
-						caveItem += artifact.toString();
+						caveItem = (Artifact) artifact;
 					}
 				}
 			}
 			for(Artifact artifact: sorcerersCave.getUndiscoveredArtifacts()) {
 				if (index == artifact.getIndex()) {
-					caveItem += artifact.toString();
+					caveItem = (Artifact) artifact;
 				}
 			}
 			break;
-			// Jobs are not supported but will be later
-		}
-
-		// standardize response when nothing was found with search
-		if ("" == caveItem) {
-			caveItem = "No Results Found In Search!";
+		case 5:
+			for(Job job: sorcerersCave.getJobs()){
+				if (index == job.getIndex()) {
+					caveItem = (Job) job;
+				}
+			}
 		}
 
 		return caveItem;
