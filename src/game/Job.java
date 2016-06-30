@@ -7,6 +7,7 @@
 package game;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -21,6 +22,7 @@ public class Job extends CaveElement implements Runnable {
 	JPanel parent;
 	// Creature performing work
 	Creature worker = null;
+	Party workParty = null;
 	
 	int jobIndex;
 	long jobTime;
@@ -38,6 +40,12 @@ public class Job extends CaveElement implements Runnable {
 	JButton jbGo   = new JButton ("Stop");
 	JButton jbKill = new JButton ("Cancel");
 	
+	// arraylist filled with keys and values for artifacts needed
+	ArrayList<Resource> resourcesNeeded = new ArrayList<Resource>();
+	
+	// arraylist to store resources that have been gathered
+	ArrayList<Artifact> myResources = new ArrayList<Artifact>();
+	
 	// preset status to suspended
 	Status status = Status.SUSPENDED;
 
@@ -51,7 +59,12 @@ public class Job extends CaveElement implements Runnable {
 		jobName = sc.next ();
 		int target = sc.nextInt ();
 		worker = (Creature) hc.get(target);
+		workParty = worker.getParty();
 		jobTime = (int)(sc.nextDouble ());
+		while (sc.hasNext()) {
+			// add every resource from this line to the artifact
+			resourcesNeeded.add(new Resource(sc.next(), sc.nextInt()));
+		}
 		pm = new JProgressBar ();
 		pm.setStringPainted (true);
 		parent.add (pm);
@@ -59,6 +72,8 @@ public class Job extends CaveElement implements Runnable {
 		parent.add (new JLabel (jobName    , SwingConstants.CENTER));
 		(new Thread (this, worker.getName() + " " + jobName)).start();
 
+		// TODO add components to be populated with resources (have/need)
+		
 		parent.add (jbGo);
 		parent.add (jbKill);
 
@@ -67,6 +82,18 @@ public class Job extends CaveElement implements Runnable {
 
 	} // end constructor
 
+	// TODO create method to get resources
+	private void getResource(Resource myResource) {
+		for (Artifact myArtifact: workParty.getKnownResourceByType(myResource.getName())){
+			// TODO check if locked
+			// if not lock it and add it to 
+		}
+	}
+	
+	// TODO create method for "have all resources"
+	
+	// TODO create method to release resources
+	
 	// set to either waiting or running
 	public void toggleGoFlag () {
 		goFlag = !goFlag; // ND; should be synced, and notify waiting sync in running loop
@@ -102,6 +129,7 @@ public class Job extends CaveElement implements Runnable {
 	} // end showStatus
 
 	// run Job
+	// TODO rewrite to only become busy once resources gathered, and otherwise release them
 	public void run () {
 		long time = System.currentTimeMillis();
 		long startTime = time;
@@ -116,6 +144,7 @@ public class Job extends CaveElement implements Runnable {
 					worker.getParty().wait();
 				}
 				catch (InterruptedException e) {
+					// TODO handle exception
 				} // end try/catch block
 			} // end while waiting for worker to be free
 			worker.busyFlag = true;
@@ -125,7 +154,9 @@ public class Job extends CaveElement implements Runnable {
 		while (time < stopTime && noKillFlag) {
 			try {
 				Thread.sleep (100);
-			} catch (InterruptedException e) {}
+			} catch (InterruptedException e) {
+				// TODO handle exception
+			}
 			if (goFlag) {
 				showStatus (Status.RUNNING);
 				time += 100;

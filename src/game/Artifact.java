@@ -14,6 +14,8 @@ public class Artifact extends CaveElement {
 	private String type;
 	private int creature;
 	private String name;
+	// TODO implement locking functionality
+	private ItemLock nessy = null;
 	
 	// constructor
 	// requires index, type, creature, and name

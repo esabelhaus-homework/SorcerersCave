@@ -14,7 +14,8 @@ public class Party extends CaveElement {
 	// assign private instance variables to be populated after creation
 	private String name;	
 	private ArrayList<Creature> creatures = new ArrayList<Creature>();
-
+	private ArrayList<Artifact> resourcePool = new ArrayList<Artifact>();
+	
 	// constructor, requires index and name
 	Party(Scanner itemScanner) {
 		itemScanner.next();
@@ -32,9 +33,24 @@ public class Party extends CaveElement {
 		return null;
 	}
 	
+	public ArrayList<Artifact> getKnownResourceByType(String myType) {
+		// TODO create array list of all available objects of a type
+		ArrayList<Artifact> theseResources = new ArrayList<Artifact>();
+		for (Artifact myArtifact: resourcePool) {
+			if (myArtifact.getType().equals(myType)) {
+				theseResources.add(myArtifact);
+			}
+		}
+		return theseResources;
+	}
+	
 	// add creature to party
 	public void addCreature(Creature myCreature) {
 		creatures.add(myCreature);
+	}
+	
+	public void addResource(Artifact myResource) {
+		resourcePool.add(myResource);
 	}
 	
 	// get creatures without exposing private object
