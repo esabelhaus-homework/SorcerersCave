@@ -14,8 +14,8 @@ public class Artifact extends CaveElement {
 	private String type;
 	private int creature;
 	private String name;
-	// TODO implement locking functionality
-	private ItemLock nessy = null;
+	// initialized unlocked
+	private ItemLock nessy = new ItemLock(1);
 	
 	// constructor
 	// requires index, type, creature, and name
@@ -25,6 +25,21 @@ public class Artifact extends CaveElement {
 		this.type = itemScanner.next();
 		this.creature = itemScanner.nextInt();
 		this.name = itemScanner.next();
+	}
+	
+	// check if locked currently
+	public boolean isLocked() {
+		return nessy.isLocked();
+	}
+	
+	// set itemlock to locked
+	public void lock() throws InterruptedException {
+		nessy.waitForUnlock();
+	}
+	
+	// set itemlock to unlocked
+	public void unlock() {
+		nessy.notifyToUnlock();
 	}
 	
 	// get creature who owns this treasure

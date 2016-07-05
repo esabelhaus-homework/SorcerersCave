@@ -82,17 +82,40 @@ public class Job extends CaveElement implements Runnable {
 
 	} // end constructor
 
+	
+	private void getResources() {
+		
+	}
+	
 	// TODO create method to get resources
-	private void getResource(Resource myResource) {
+	private void getResource(Resource myResource) throws InterruptedException {
 		for (Artifact myArtifact: workParty.getKnownResourceByType(myResource.getName())){
-			// TODO check if locked
-			// if not lock it and add it to 
+			if (!(myArtifact.isLocked())) {
+				myArtifact.lock();
+				myResource.addedOne();
+				myResources.add(myArtifact);
+				return;
+			}
 		}
 	}
 	
-	// TODO create method for "have all resources"
+	// TODO create method for "have all resources by type"
+	private boolean haveAllResources() {
+		Boolean haveAll = true;
+		for (Resource myResource: resourcesNeeded) {
+			if (!(myResource.haveAllResources())) {
+				haveAll = false;
+			}
+		}
+		return haveAll;
+	}
 	
 	// TODO create method to release resources
+	private void releaseResources() {
+		for (Artifact myArtifact: myResources) {
+			myArtifact.unlock();
+		}
+	}
 	
 	// set to either waiting or running
 	public void toggleGoFlag () {
@@ -138,6 +161,10 @@ public class Job extends CaveElement implements Runnable {
 
 		// perform synchronized work processing on Job
 		synchronized (worker.getParty()) {
+			while (!haveAllResources()) {
+				
+			}
+			
 			while (worker.busyFlag) {
 				showStatus (Status.WAITING);
 				try {

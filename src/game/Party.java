@@ -34,7 +34,6 @@ public class Party extends CaveElement {
 	}
 	
 	public ArrayList<Artifact> getKnownResourceByType(String myType) {
-		// TODO create array list of all available objects of a type
 		ArrayList<Artifact> theseResources = new ArrayList<Artifact>();
 		for (Artifact myArtifact: resourcePool) {
 			if (myArtifact.getType().equals(myType)) {

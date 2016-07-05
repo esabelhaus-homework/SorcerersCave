@@ -2,7 +2,7 @@
  * FILE: 	ItemLock.java
  * DATE:  	05/25/2016
  * AUTHOR: 	Eric Sabelhaus
- * PURPOSE:	This class will allow a thread to acquire and release locks as required
+ * PURPOSE:	This class will allow a thread to acquire and release locks as required on object
  * 
  */
 package game;
@@ -13,6 +13,10 @@ public class ItemLock {
 
 	ItemLock(int initial) {
 		locked = (initial == 0);
+	}
+	
+	public boolean isLocked() {
+		return locked;
 	}
 	
 	public synchronized void waitForUnlock() throws InterruptedException {
