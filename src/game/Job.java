@@ -15,6 +15,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.JTextPane;
 import javax.swing.SwingConstants;
 
 public class Job extends CaveElement implements Runnable {
@@ -39,9 +40,14 @@ public class Job extends CaveElement implements Runnable {
     // JButtons used to suspend, resume, or cancel Job
 	JButton jbGo   = new JButton ("Stop");
 	JButton jbKill = new JButton ("Cancel");
+	JTextPane whatINeed = new JTextPane();
+	JTextPane whatIGot = new JTextPane();
 	
 	// arraylist filled with keys and values for artifacts needed
 	ArrayList<Resource> resourcesNeeded = new ArrayList<Resource>();
+	
+	private String resourcesNeededText = "Resources Needed: ";
+	private String myResourcesText = "Resources Acquired: ";
 	
 	// arraylist to store resources that have been gathered
 	ArrayList<Artifact> myResources = new ArrayList<Artifact>();
@@ -62,8 +68,10 @@ public class Job extends CaveElement implements Runnable {
 		workParty = worker.getParty();
 		jobTime = (int)(sc.nextDouble ());
 		while (sc.hasNext()) {
+			Resource myResource = new Resource(sc.next(), sc.nextInt());
 			// add every resource from this line to the artifact
-			resourcesNeeded.add(new Resource(sc.next(), sc.nextInt()));
+			resourcesNeeded.add(myResource);
+			resourcesNeededText += myResource.toString();
 		}
 		pm = new JProgressBar ();
 		pm.setStringPainted (true);
@@ -72,34 +80,60 @@ public class Job extends CaveElement implements Runnable {
 		parent.add (new JLabel (jobName    , SwingConstants.CENTER));
 		(new Thread (this, worker.getName() + " " + jobName)).start();
 
-		// TODO add components to be populated with resources (have/need)
+		whatINeed.setText(resourcesNeededText);
 		
-		parent.add (jbGo);
-		parent.add (jbKill);
+		parent.add(whatINeed);
+		parent.add(whatIGot);
+		parent.add(jbGo);
+		parent.add(jbKill);
 
 		jbGo.addActionListener (e -> toggleGoFlag());
 		jbKill.addActionListener (e -> setKillFlag ());
 
 	} // end constructor
-
 	
-	private void getResources() {
-		
+	private void rewriteResourceDetails() {
+		resourcesNeededText = "Resources Needed: ";
+		for (Resource resource: resourcesNeeded) {
+			if (!(resource.haveAllResources())) {
+				resourcesNeededText += resource.toString();
+			}
+		}
+		whatINeed.setText(resourcesNeededText);
+		parent.validate();
 	}
 	
-	// TODO create method to get resources
+	private void getResources() {
+		for(Resource resource: resourcesNeeded) {
+			try {
+				getResource(resource);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		if (!haveAllResources()) {
+			releaseResources();
+		}
+	}
+	
+	// this method allocates one resource to this job
 	private void getResource(Resource myResource) throws InterruptedException {
 		for (Artifact myArtifact: workParty.getKnownResourceByType(myResource.getName())){
 			if (!(myArtifact.isLocked())) {
 				myArtifact.lock();
+				String thisResource = myArtifact.getName().toString() + " : " + myArtifact.getType().toString() + " ";
+				myResourcesText += thisResource;
 				myResource.addedOne();
 				myResources.add(myArtifact);
+				whatIGot.setText(myResourcesText);
+				rewriteResourceDetails();
+				parent.validate();
 				return;
 			}
 		}
 	}
 	
-	// TODO create method for "have all resources by type"
+	// checks to see whether all of the resources needed are gathered
 	private boolean haveAllResources() {
 		Boolean haveAll = true;
 		for (Resource myResource: resourcesNeeded) {
@@ -110,11 +144,15 @@ public class Job extends CaveElement implements Runnable {
 		return haveAll;
 	}
 	
-	// TODO create method to release resources
+	// if this job cannot gather all of its resources, it should release
+	// the ones it has to prevent deadlock, and allow other jobs to progress
 	private void releaseResources() {
+		myResourcesText = "Resources Acquired: ";
 		for (Artifact myArtifact: myResources) {
 			myArtifact.unlock();
 		}
+		whatIGot.setText(myResourcesText);
+		parent.validate();
 	}
 	
 	// set to either waiting or running
@@ -126,6 +164,7 @@ public class Job extends CaveElement implements Runnable {
 	public void setKillFlag () {
 		noKillFlag = false;
 		jbKill.setBackground (Color.red);
+		releaseResources();
 	} // end setKillFlag
 
 	// display status of Job
@@ -160,19 +199,17 @@ public class Job extends CaveElement implements Runnable {
 		double duration = stopTime - time;
 
 		// perform synchronized work processing on Job
+		// only perform once all resources are gathered
 		synchronized (worker.getParty()) {
-			while (!haveAllResources()) {
-				
-			}
-			
-			while (worker.busyFlag) {
+			while (!(haveAllResources()) && worker.busyFlag) {
 				showStatus (Status.WAITING);
 				try {
 					worker.getParty().wait();
 				}
 				catch (InterruptedException e) {
-					// TODO handle exception
+					e.printStackTrace();
 				} // end try/catch block
+				getResources();
 			} // end while waiting for worker to be free
 			worker.busyFlag = true;
 		} // end synchronized on worker
@@ -182,7 +219,7 @@ public class Job extends CaveElement implements Runnable {
 			try {
 				Thread.sleep (100);
 			} catch (InterruptedException e) {
-				// TODO handle exception
+				e.printStackTrace();
 			}
 			if (goFlag) {
 				showStatus (Status.RUNNING);
@@ -195,11 +232,12 @@ public class Job extends CaveElement implements Runnable {
 
 		// complete job
 		pm.setValue (100);
+		releaseResources();
 		showStatus (Status.DONE);
 		// notify worker of available thread to perform next Job
 		synchronized (worker.getParty()) {
 			worker.busyFlag = false; 
-			worker.getParty().notifyAll ();
+			worker.getParty().notifyAll();
 		}
 
 	} // end method run - implements runnable

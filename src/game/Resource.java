@@ -40,6 +40,6 @@ public class Resource {
 	}
 	
 	public String toString() {
-		return name + needed;
+		return name + " : " + needed;
 	}
 }

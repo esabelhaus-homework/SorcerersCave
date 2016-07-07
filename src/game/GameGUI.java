@@ -115,7 +115,7 @@ public class GameGUI extends JPanel {
 
 		sorcerersCave = new Cave(sfin, parentJobPanel);
 
-		parentJobPanel.setLayout (new GridLayout (0, 5));
+		parentJobPanel.setLayout (new GridLayout (0, 7));
 		JScrollPane scrollingJobPanel = new JScrollPane (parentJobPanel);
 
 		// instantiate frame
