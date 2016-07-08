@@ -33,14 +33,20 @@ public class Party extends CaveElement {
 		return null;
 	}
 	
+	// get resources by type for simplicity sake
 	public ArrayList<Artifact> getKnownResourceByType(String myType) {
 		ArrayList<Artifact> theseResources = new ArrayList<Artifact>();
-		for (Artifact myArtifact: resourcePool) {
-			if (myArtifact.getType().equals(myType)) {
-				theseResources.add(myArtifact);
+		for (Artifact artifact: resourcePool) {
+			if (artifact.getType().equals(myType)) {
+				theseResources.add(artifact);
 			}
 		}
+
 		return theseResources;
+	}
+	
+	public ArrayList<Artifact> getResourcePool() {
+		return resourcePool;
 	}
 	
 	// add creature to party
@@ -48,7 +54,9 @@ public class Party extends CaveElement {
 		creatures.add(myCreature);
 	}
 	
+	// add individual resource to pool
 	public void addResource(Artifact myResource) {
+		System.out.println("adding " + myResource.getName() + " to resource pool on " + name);
 		resourcePool.add(myResource);
 	}
 	

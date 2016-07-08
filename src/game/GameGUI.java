@@ -194,6 +194,7 @@ public class GameGUI extends JPanel {
 		
 		//Display the window.
 		frame.pack();
+		frame.setExtendedState(JFrame.MAXIMIZED_BOTH); 
 		frame.setVisible(true);
 	}
 	

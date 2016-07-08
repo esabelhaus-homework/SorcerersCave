@@ -68,6 +68,8 @@ public class TestSorcerersCave {
 			for(Job job: testGUI.sorcerersCave.getJobs()) {
 				assert(job.getIndex() == 50001);
 				assert(job.worker == (Creature) testGUI.getCaveElementByIndex(20001));
+				assert(job.resourcesNeeded.get(0) != null);
+				assert(job.resourcesNeeded.get(0).getType().equals("Wand"));
 			}
 		}
 	}

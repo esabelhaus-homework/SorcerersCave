@@ -8,13 +8,13 @@
 package game;
 
 public class Resource {
-	private String name;
+	private String type;
 	private int needed;
 	private int have = 0;
 	
-	// name of artifact (type), number needed, initialize resource as unmet
-	public Resource(String myName, int howMany) {
-		this.name = myName;
+	// name of artifact (type), number needed, initialize resource as un-met
+	public Resource(String myType, int howMany) {
+		this.type = myType;
 		this.needed = howMany;
 	}
 	
@@ -32,14 +32,14 @@ public class Resource {
 	}
 	
 	public int howManyNeeded() {
-		return needed - have;
+		return needed;
 	}
 	
-	public String getName() {
-		return name;
+	public String getType() {
+		return type;
 	}
 	
 	public String toString() {
-		return name + " : " + needed;
+		return type + " : " + needed;
 	}
 }

@@ -8,6 +8,7 @@
 package game;
 
 import java.util.Scanner;
+import java.util.concurrent.Semaphore;
 
 public class Artifact extends CaveElement {
 	// define internal private variables
@@ -15,7 +16,7 @@ public class Artifact extends CaveElement {
 	private int creature;
 	private String name;
 	// initialized unlocked
-	private ItemLock nessy = new ItemLock(1);
+	private Semaphore mutex;
 	
 	// constructor
 	// requires index, type, creature, and name
@@ -25,21 +26,23 @@ public class Artifact extends CaveElement {
 		this.type = itemScanner.next();
 		this.creature = itemScanner.nextInt();
 		this.name = itemScanner.next();
+		this.mutex = new Semaphore(1);
 	}
 	
-	// check if locked currently
-	public boolean isLocked() {
-		return nessy.isLocked();
+	public boolean state() {
+		return mutex.tryAcquire();
 	}
 	
 	// set itemlock to locked
-	public void lock() throws InterruptedException {
-		nessy.waitForUnlock();
+	public void acquire() throws InterruptedException {
+		System.out.println("acquire " + name);
+		mutex.acquire();
 	}
 	
 	// set itemlock to unlocked
-	public void unlock() {
-		nessy.notifyToUnlock();
+	public void release() {
+		System.out.println("release " + name);
+		mutex.release();
 	}
 	
 	// get creature who owns this treasure

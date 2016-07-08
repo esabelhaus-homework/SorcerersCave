@@ -189,7 +189,7 @@ public class Cave {
 
 		// find creature within HashMap from created treasure
 		Creature myCreature = (Creature) theseElements.get(myTreasure.getCreature());
-
+		
 		// add treasure to cave or creature
 		if (myCreature == null) {
 			addUndiscoveredTreasure(myTreasure);
@@ -208,11 +208,12 @@ public class Cave {
 
 		// find creature within HashMap from created artifact
 		Creature myCreature = (Creature) theseElements.get(myArtifact.getCreature());
-
+		
 		if (myCreature == null) {
 			addUndiscoveredArtifact(myArtifact);
-		} else {
+		} else {			
 			myCreature.addArtifact(myArtifact);
+			myCreature.getParty().addResource(myArtifact);
 		}
 
 	}
