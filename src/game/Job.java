@@ -23,33 +23,30 @@ public class Job extends CaveElement implements Runnable {
 	JPanel parent;
 	// Creature performing work
 	Creature worker = null;
-	
+
 	int jobIndex;
 	long jobTime;
 	String jobName = "";
-	
+
 	// display thread progress as it advances
 	JProgressBar pm = new JProgressBar ();
-	
+
 	// process thread or not
 	boolean goFlag = true; 
 	// kill job?
-    boolean noKillFlag = true;
-    
-    // JButtons used to suspend, resume, or cancel Job
+	boolean noKillFlag = true;
+
+	// have all resources?
+	boolean haveAll = false;
+
+	// JButtons used to suspend, resume, or cancel Job
 	JButton jbGo   = new JButton ("Stop");
 	JButton jbKill = new JButton ("Cancel");
 	JTextPane whatINeed = new JTextPane();
 	JTextPane whatIGot = new JTextPane();
-	
-	// arraylist filled with keys and values for artifacts needed
-	ArrayList<Resource> resourcesNeeded = new ArrayList<Resource>();
-	
-	private String resourcesNeededText = "Resources Needed: ";
-	private String myResourcesText = "Resources Acquired: ";
-	
-	// arraylist to store resources that have been gathered
-	ArrayList<Artifact> myResources = new ArrayList<Artifact>();
+
+	// hashmap filled with keys and values for artifacts needed
+	HashMap<String,Integer> resourcesNeeded = new HashMap<String,Integer>();
 	
 	// preset status to suspended
 	Status status = Status.SUSPENDED;
@@ -66,128 +63,67 @@ public class Job extends CaveElement implements Runnable {
 		worker = (Creature) hc.get(target);
 		jobTime = (int)(sc.nextDouble ());
 		while (sc.hasNext()) {
-			String type = sc.next();
-			int howMany = sc.nextInt();
-			
-			String parsedType = "";
-			
-			// since it is stored as plural, I parse the plurality since it is handled
-			// using the number required
+			String type = sc.next(); 
 			switch (type) {
-				case "Wands":
-					parsedType = "Wand"; break;
-				case "Weapons":
-					parsedType = "Weapon"; break;
-				case "Potions":
-					parsedType = "Potion"; break;
-				case "Stone":
-					parsedType = type;
+				case "Stone"   : break;
+				case "Weapons" : type = "Weapon"; break;
+				case "Potions" : type = "Potion"; break;
+				case "Wands"   : type = "Wand"; break;
 			}
-			
-			Resource myResource = new Resource(parsedType, howMany);
-			// add every resource from this line to the artifact
-			resourcesNeeded.add(myResource);
-			resourcesNeededText += "\n" + myResource.toString();
+			resourcesNeeded.put(type, sc.nextInt());
 		}
-		
+
 		pm = new JProgressBar ();
 		pm.setStringPainted (true);
 		parent.add (pm);
-		JLabel workerLabel = new JLabel (worker.getName(), SwingConstants.CENTER);
-		JLabel jobLabel = new JLabel (jobName    , SwingConstants.CENTER);
-		parent.add (workerLabel);
-		parent.add (jobLabel);
-		(new Thread (this, worker.getName() + " " + jobName)).start();
-		
-		
-		whatINeed.setText(resourcesNeededText);
-		whatIGot.setText(myResourcesText);
+		parent.add (new JLabel (worker.getName(), SwingConstants.CENTER));
+		parent.add (new JLabel (jobName    , SwingConstants.CENTER));
+		setResourceDisplay();
 		parent.add(whatINeed);
 		parent.add(whatIGot);
 		parent.add(jbGo);
 		parent.add(jbKill);
 
+		(new Thread (this, worker.getName() + " " + jobName)).start();
+
 		jbGo.addActionListener (e -> toggleGoFlag());
 		jbKill.addActionListener (e -> setKillFlag ());
 
 	} // end constructor
-	
-	private void rewriteResourceDetails() {
-		resourcesNeededText = "Resources Needed: ";
-		for (Resource resource: resourcesNeeded) {
-			if (!(resource.haveAllResources())) {
-				resourcesNeededText += "\n" + resource.toString();
-			}
+
+
+	public void setResourceDisplay() {
+		String resourcesNeededText = "Resources Needed: ";
+		String myResourcesText = "Resources Acquired: ";
+
+		for(HashMap.Entry<String, Integer> entry : resourcesNeeded.entrySet()) { 
+		    resourcesNeededText += "\n" + entry.getKey() + " : " + entry.getValue();
 		}
 		whatINeed.setText(resourcesNeededText);
 		whatIGot.setText(myResourcesText);
 		parent.validate();
 	}
 	
-	private void getResources() throws InterruptedException {
-		for(Resource resource: resourcesNeeded) {
-			try {
-				int counter = 0;
-				while(counter != resource.howManyNeeded() - 1) {
-					System.out.println("get this type of resource: " + resource);
-					getResource(resource);
-					counter++;
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} finally {
-				releaseResources();
-			}
+	public synchronized void updateResourceDisplay(ArrayList<Artifact> resources) {
+		String resourcesNeededText = "All Resources Acquired";
+		whatINeed.setText(resourcesNeededText);
+		String myResourcesText = "Acquired:\n";
+		for (Artifact artifact: resources) {
+			myResourcesText += artifact.getName() + "\n";
 		}
+		whatIGot.setText(myResourcesText);
+		parent.validate();
 	}
-	
-	// this method allocates one resource to this job if available
-	private void getResource(Resource myResource) throws InterruptedException {
-		// iterate over all resources by type
-		Artifact resourceNeeded = null; 
-		for (Artifact resourceArtifact: worker.getParty().getKnownResourceByType(myResource.getType())){
-			// if one is available, increment the count contained by the creature
-			if (resourceArtifact.state()) {
-				resourceNeeded = resourceArtifact;
-			}
-			if (resourceNeeded != null) {
-				synchronized (worker.getParty()) {
-					resourceNeeded.acquire();	
-				}
-				myResource.addedOne();
-				String thisResource = "\n" + resourceNeeded.getName() + " : " + resourceNeeded.getType() + " ";
-				myResourcesText += thisResource;
-				myResources.add(resourceNeeded);
-				rewriteResourceDetails();
-			} else {
-				System.out.println("No " + myResource.getType() + "s available");
-			}
-		}
-	}
-	
-	// checks to see whether all of the resources needed are gathered
-	private boolean haveAllResources() {
-		Boolean haveAll = true;
-		for (Resource myResource: resourcesNeeded) {
-			if (!(myResource.haveAllResources())) {
-				haveAll = false;
-			}
-		}
-		return haveAll;
-	}
-	
-	// if this job cannot gather all of its resources, it should release
-	// the ones it has to prevent deadlock, and allow other jobs to progress
-	private void releaseResources() {
-		myResourcesText = "Resources Acquired: ";
-		for (Artifact myArtifact: myResources) {
-			synchronized (worker.getParty()) {
-				myArtifact.release();
-			}
-			System.out.println("is it actually available: " + myArtifact.state());
-		}
-		myResources.clear();
-	}
+
+	public synchronized boolean partyHasResources() {	
+        boolean result = true;
+        for (HashMap.Entry<String, Integer> entry : resourcesNeeded.entrySet()) {    
+            if (worker.getParty().resourceAvailableCountByType(entry.getKey()) - entry.getValue() < 0) {
+                result = false;
+            }
+        }
+        return result;
+    }
 	
 	// set to either waiting or running
 	public void toggleGoFlag () {
@@ -198,7 +134,6 @@ public class Job extends CaveElement implements Runnable {
 	public void setKillFlag () {
 		noKillFlag = false;
 		jbKill.setBackground (Color.red);
-		releaseResources();
 	} // end setKillFlag
 
 	// display status of Job
@@ -223,9 +158,10 @@ public class Job extends CaveElement implements Runnable {
 			break;
 		} // end switch on status
 	} // end showStatus
-	
+
 	// run Job
 	public void run () {
+		ArrayList<Artifact> runtimeResources = new ArrayList<Artifact>();
 		long time = System.currentTimeMillis();
 		long startTime = time;
 		long stopTime = time + 1000 * jobTime;
@@ -234,25 +170,21 @@ public class Job extends CaveElement implements Runnable {
 		// perform synchronized work processing on Job
 		// only perform once all resources are gathered
 		synchronized (worker.getParty()) {
-			while (!(haveAllResources()) && worker.busyFlag) {
+			while (worker.busyFlag || !partyHasResources()) {
 				showStatus (Status.WAITING);
 				try {
 					worker.getParty().wait();
-					getResources();
 				}
 				catch (InterruptedException e) {
 					e.printStackTrace();
 				} // end try/catch block
 			} // end while waiting for worker to be free
 			worker.busyFlag = true;
+			// reserve resources, return resources reserved as string
+			
+			runtimeResources = worker.getParty().reserveResources(resourcesNeeded);
+			updateResourceDisplay(runtimeResources);
 		} // end synchronized on worker
-
-		resourcesNeeded.clear();
-				
-		resourcesNeededText = "All resources aquired";
-		
-		whatINeed.setText(resourcesNeededText);
-		whatIGot.setText(myResourcesText);
 		
 		// wait until job can run
 		while (time < stopTime && noKillFlag) {
@@ -275,10 +207,10 @@ public class Job extends CaveElement implements Runnable {
 		showStatus (Status.DONE);
 		// notify worker of available thread to perform next Job
 		synchronized (worker.getParty()) {
+			worker.getParty().releaseResources(resourcesNeeded, runtimeResources);
 			worker.busyFlag = false; 
 			worker.getParty().notifyAll();
 		}
-		releaseResources();
 		whatIGot.setText("Job Completed, resources dropped!");
 	} // end method run - implements runnable
 

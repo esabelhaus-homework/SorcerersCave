@@ -211,7 +211,7 @@ public class Cave {
 		
 		if (myCreature == null) {
 			addUndiscoveredArtifact(myArtifact);
-		} else {			
+		} else {
 			myCreature.addArtifact(myArtifact);
 			myCreature.getParty().addResource(myArtifact);
 		}
